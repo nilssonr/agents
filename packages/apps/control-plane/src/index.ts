@@ -4,8 +4,8 @@ import { loadConfig } from '@agents/config';
 import { createLogger } from '@agents/logger';
 
 import { buildApp } from './app.js';
-import { startGrpcServer } from './adapters/grpc/server.js';
-import { createWorkerServiceImpl } from './adapters/grpc/worker-service-impl.js';
+import { startGrpcServer } from './api/grpc/server.js';
+import { createWorkerServiceImpl } from './api/grpc/worker-service-impl.js';
 import { createPgAgentRepository } from './adapters/postgres/pg-agent-repository.js';
 import { createPgJobRepository } from './adapters/postgres/pg-job-repository.js';
 import { createPgTriggerRepository } from './adapters/postgres/pg-trigger-repository.js';

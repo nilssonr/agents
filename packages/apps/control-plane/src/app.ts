@@ -1,8 +1,8 @@
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
-import { registerAgentRoutes } from './adapters/rest/agents.js';
-import { registerWebhookRoutes } from './adapters/rest/webhooks.js';
+import { registerAgentRoutes } from './api/rest/agents.js';
+import { registerWebhookRoutes } from './api/rest/webhooks.js';
 import type { AgentService } from './features/agents/agent-service.js';
 import type { JobService } from './features/jobs/job-service.js';
 
