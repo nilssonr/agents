@@ -1,0 +1,17 @@
+{
+    "name": "@agents/worker",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsx watch src/index.ts",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@agents/config": "workspace:*",
+        "@agents/contracts": "workspace:*",
+        "@agents/logger": "workspace:*",
+        "nice-grpc": "^2.1.0"
+    }
+}
