@@ -1,12 +1,12 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 
-import { buildApp } from '../../app.js';
-import { createFakeAgentRepository, createFakeJobRepository } from '../../__tests__/fake-repositories.js';
-import { createAgentService } from '../../services/agent-service.js';
-import { createJobService } from '../../services/job-service.js';
-import type { AgentService } from '../../services/agent-service.js';
-import type { JobService } from '../../services/job-service.js';
+import { buildApp } from '../app.js';
+import { createAgentService } from '../services/agent-service.js';
+import { createJobService } from '../services/job-service.js';
+import { createFakeAgentRepository, createFakeJobRepository } from '../testing/fake-repositories.js';
+import type { AgentService } from '../services/agent-service.js';
+import type { JobService } from '../services/job-service.js';
 
 describe('Agent routes', () => {
     let app: FastifyInstance;

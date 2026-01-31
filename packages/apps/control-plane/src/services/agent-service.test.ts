@@ -1,9 +1,9 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 
-import { createFakeAgentRepository, createFakeJobRepository } from '../../__tests__/fake-repositories.js';
-import type { AgentRepository, JobRepository } from '../../repositories/types.js';
-import { AgentNotFoundError, AgentPausedError, createAgentService } from '../agent-service.js';
-import type { AgentService } from '../agent-service.js';
+import { createFakeAgentRepository, createFakeJobRepository } from '../testing/fake-repositories.js';
+import type { AgentRepository, JobRepository } from '../repositories/types.js';
+import { AgentNotFoundError, AgentPausedError, createAgentService } from './agent-service.js';
+import type { AgentService } from './agent-service.js';
 
 describe('AgentService', () => {
     let agentRepo: AgentRepository;

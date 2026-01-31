@@ -1,10 +1,9 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 
-import { createFakeAgentRepository, createFakeJobRepository } from '../../__tests__/fake-repositories.js';
-import { createAgentService } from '../../services/agent-service.js';
-import { createFakeTriggerRepository } from '../../__tests__/fake-repositories.js';
-import { createCronScheduler } from '../cron-scheduler.js';
-import type { CronScheduler } from '../cron-scheduler.js';
+import { createAgentService } from '../services/agent-service.js';
+import { createFakeAgentRepository, createFakeJobRepository, createFakeTriggerRepository } from '../testing/fake-repositories.js';
+import { createCronScheduler } from './cron-scheduler.js';
+import type { CronScheduler } from './cron-scheduler.js';
 
 describe('CronScheduler', () => {
     let scheduler: CronScheduler;

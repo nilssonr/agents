@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createLogger } from '../index.js';
+import { createLogger } from './index.js';
 
 describe('createLogger', () => {
     it('should create a pino logger instance', () => {

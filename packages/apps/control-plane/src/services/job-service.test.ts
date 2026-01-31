@@ -1,8 +1,8 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 
-import { createFakeAgentRepository, createFakeJobRepository } from '../../__tests__/fake-repositories.js';
-import { createJobService } from '../job-service.js';
-import type { JobService } from '../job-service.js';
+import { createFakeAgentRepository, createFakeJobRepository } from '../testing/fake-repositories.js';
+import { createJobService } from './job-service.js';
+import type { JobService } from './job-service.js';
 
 describe('JobService', () => {
     let agentRepo: ReturnType<typeof createFakeAgentRepository>;

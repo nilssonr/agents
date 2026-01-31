@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createActivityRegistry } from '../activity-registry.js';
+import { createActivityRegistry } from './activity-registry.js';
 
 describe('ActivityRegistry', () => {
     it('ships with noop activity', () => {
