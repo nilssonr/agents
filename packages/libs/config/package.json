@@ -1,0 +1,24 @@
+{
+    "name": "@agents/config",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run"
+    },
+    "devDependencies": {
+        "vitest": "^3.0.0"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.0"
+    }
+}
