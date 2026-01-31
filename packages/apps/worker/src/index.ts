@@ -1,24 +1,22 @@
 import { createLogger } from '@agents/logger';
 
-import { createWorkerApp } from './app.js';
+import { createApp } from './app.js';
 
 const logger = createLogger('worker');
+const app = createApp();
 
-const app = createWorkerApp();
-const abortController = new AbortController();
+logger.info('worker starting');
 
-logger.info({ workerId: app.config.workerId, grpcAddress: app.config.grpcAddress }, 'worker starting');
-
-app.run(abortController.signal).catch((err: unknown) => {
+app.start().catch((err: unknown) => {
     logger.error({ err }, 'worker error');
     process.exit(1);
 });
 
 process.on('SIGINT', () => {
     logger.info('worker shutting down');
-    abortController.abort();
+    app.shutdown();
 });
 process.on('SIGTERM', () => {
     logger.info('worker shutting down');
-    abortController.abort();
+    app.shutdown();
 });

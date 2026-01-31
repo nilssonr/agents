@@ -3,12 +3,9 @@ import { createLogger } from '@agents/logger';
 import { createApp } from './app.js';
 
 const logger = createLogger('control-plane');
-
 const app = createApp();
 
-app.cronScheduler.start();
-
-app.rest.listen({ port: 3000, host: '0.0.0.0' })
+app.start()
     .then((address) => {
         logger.info({ address }, 'control-plane started');
     })
