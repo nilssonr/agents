@@ -50,6 +50,9 @@ importers:
       '@agents/logger':
         specifier: workspace:*
         version: link:../../libs/logger
+      '@agents/migrations':
+        specifier: workspace:*
+        version: link:../../libs/migrations
       croner:
         specifier: ^9.1.0
         version: 9.1.0
@@ -129,6 +132,22 @@ importers:
         specifier: ^9.6.0
         version: 9.14.0
     devDependencies:
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/node@22.19.7)(tsx@4.21.0)
+
+  packages/libs/migrations:
+    dependencies:
+      '@agents/logger':
+        specifier: workspace:*
+        version: link:../logger
+      pg:
+        specifier: ^8.13.0
+        version: 8.18.0
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.11.0
+        version: 8.16.0
       vitest:
         specifier: ^3.0.0
         version: 3.2.4(@types/node@22.19.7)(tsx@4.21.0)

@@ -1,6 +1,9 @@
+import { fileURLToPath } from 'node:url';
+import { join, dirname } from 'node:path';
 import pg from 'pg';
 
 import { loadConfig } from '@agents/config';
+import { createMigrationRunner } from '@agents/migrations';
 
 import { createPgAgentRepository } from './adapters/postgres/pg-agent-repository.js';
 import { createPgJobRepository } from './adapters/postgres/pg-job-repository.js';
@@ -35,6 +38,8 @@ export function createApp(): App {
 
     // Infrastructure
     const pool = new pg.Pool({ connectionString: config.databaseUrl });
+    const migrationsPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'sql', 'migrations');
+    const migrationRunner = createMigrationRunner(pool, { migrationsPath });
     const agentRepo = createPgAgentRepository(pool);
     const jobRepo = createPgJobRepository(pool);
     const triggerRepo = createPgTriggerRepository(pool);
@@ -53,6 +58,7 @@ export function createApp(): App {
 
     return {
         async start(): Promise<string> {
+            await migrationRunner.up();
             cronScheduler.start();
             return rest.listen({ port: Number(config.httpPort), host: '0.0.0.0' });
         },

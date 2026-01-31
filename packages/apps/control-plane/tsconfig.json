@@ -7,5 +7,5 @@
         "verbatimModuleSyntax": false
     },
     "include": ["src"],
-    "references": [{ "path": "../../libs/logger" }, { "path": "../../libs/config" }, { "path": "../../libs/contracts" }]
+    "references": [{ "path": "../../libs/logger" }, { "path": "../../libs/config" }, { "path": "../../libs/contracts" }, { "path": "../../libs/migrations" }]
 }

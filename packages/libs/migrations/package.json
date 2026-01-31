@@ -1,0 +1,26 @@
+{
+    "name": "@agents/migrations",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@agents/logger": "workspace:*",
+        "pg": "^8.13.0"
+    },
+    "devDependencies": {
+        "@types/pg": "^8.11.0",
+        "vitest": "^3.0.0"
+    }
+}
