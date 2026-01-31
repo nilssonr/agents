@@ -5,7 +5,10 @@ import type { WorkerServiceClient, JobAssignment, JobResult, JobAck } from '@age
 import { createActivityRegistry } from '../../features/activities/activity-registry.js';
 import { runWorker } from './worker-client.js';
 
-function createFakeClient(assignments: JobAssignment[]): WorkerServiceClient & { reported: JobResult[] } {
+function createFakeClient(
+    assignments: JobAssignment[],
+    controller: AbortController,
+): WorkerServiceClient & { reported: JobResult[] } {
     const reported: JobResult[] = [];
 
     return {
@@ -19,6 +22,7 @@ function createFakeClient(assignments: JobAssignment[]): WorkerServiceClient & {
                             if (index < assignments.length) {
                                 return { value: assignments[index++]!, done: false };
                             }
+                            controller.abort();
                             return { value: undefined as unknown as JobAssignment, done: true };
                         },
                     };
@@ -35,6 +39,7 @@ function createFakeClient(assignments: JobAssignment[]): WorkerServiceClient & {
 describe('WorkerClient', () => {
     it('processes a job assignment using the activity registry', async () => {
         const registry = createActivityRegistry();
+        const controller = new AbortController();
         const client = createFakeClient([
             {
                 jobId: 'j1',
@@ -43,9 +48,8 @@ describe('WorkerClient', () => {
                 paramsJson: '{}',
                 payloadJson: '{"data":"test"}',
             },
-        ]);
+        ], controller);
 
-        const controller = new AbortController();
         await runWorker({ workerId: 'w1', client, registry }, controller.signal);
 
         expect(client.reported).toHaveLength(1);
@@ -55,6 +59,7 @@ describe('WorkerClient', () => {
 
     it('reports failure for unknown activity type', async () => {
         const registry = createActivityRegistry();
+        const controller = new AbortController();
         const client = createFakeClient([
             {
                 jobId: 'j2',
@@ -63,9 +68,9 @@ describe('WorkerClient', () => {
                 paramsJson: '{}',
                 payloadJson: '',
             },
-        ]);
+        ], controller);
 
-        await runWorker({ workerId: 'w1', client, registry }, new AbortController().signal);
+        await runWorker({ workerId: 'w1', client, registry }, controller.signal);
 
         expect(client.reported).toHaveLength(1);
         expect(client.reported[0]!.success).toBe(false);
@@ -74,6 +79,7 @@ describe('WorkerClient', () => {
 
     it('reports failure when activity throws', async () => {
         const registry = createActivityRegistry();
+        const controller = new AbortController();
         registry.register('failing', async () => {
             throw new Error('boom');
         });
@@ -86,12 +92,70 @@ describe('WorkerClient', () => {
                 paramsJson: '{}',
                 payloadJson: '',
             },
-        ]);
+        ], controller);
 
-        await runWorker({ workerId: 'w1', client, registry }, new AbortController().signal);
+        await runWorker({ workerId: 'w1', client, registry }, controller.signal);
 
         expect(client.reported).toHaveLength(1);
         expect(client.reported[0]!.success).toBe(false);
         expect(client.reported[0]!.error).toBe('boom');
+    });
+
+    it('reconnects after a connection error', async () => {
+        const registry = createActivityRegistry();
+        const controller = new AbortController();
+        let callCount = 0;
+
+        const client: WorkerServiceClient & { reported: JobResult[] } = {
+            reported: [],
+            subscribeToJobs(): AsyncIterable<JobAssignment> {
+                callCount++;
+                if (callCount === 1) {
+                    return {
+                        [Symbol.asyncIterator](): AsyncIterator<JobAssignment> {
+                            return {
+                                async next(): Promise<IteratorResult<JobAssignment>> {
+                                    throw new Error('connection refused');
+                                },
+                            };
+                        },
+                    };
+                }
+                return {
+                    [Symbol.asyncIterator](): AsyncIterator<JobAssignment> {
+                        let sent = false;
+                        return {
+                            async next(): Promise<IteratorResult<JobAssignment>> {
+                                if (!sent) {
+                                    sent = true;
+                                    return {
+                                        value: {
+                                            jobId: 'j4',
+                                            agentId: 'a1',
+                                            activityType: 'noop',
+                                            paramsJson: '{}',
+                                            payloadJson: '',
+                                        },
+                                        done: false,
+                                    };
+                                }
+                                controller.abort();
+                                return { value: undefined as unknown as JobAssignment, done: true };
+                            },
+                        };
+                    },
+                };
+            },
+            async reportJobResult(request): Promise<JobAck> {
+                client.reported.push(request as JobResult);
+                return { accepted: true };
+            },
+        };
+
+        await runWorker({ workerId: 'w1', client, registry }, controller.signal);
+
+        expect(callCount).toBe(2);
+        expect(client.reported).toHaveLength(1);
+        expect(client.reported[0]!.jobId).toBe('j4');
     });
 });

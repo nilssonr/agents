@@ -12,30 +12,46 @@ export interface WorkerClientOptions {
     registry: ActivityRegistry;
 }
 
+const BASE_RETRY_MS = 1000;
+const MAX_RETRY_MS = 30000;
+
 /**
  * Subscribes to the control-plane's job stream and processes assignments
  * using the activity registry. Each assignment is executed and the result
- * (success or failure) is reported back over gRPC. Runs until the signal
+ * (success or failure) is reported back over gRPC. Automatically reconnects
+ * with exponential backoff on connection failures. Runs until the signal
  * is aborted.
  */
 export async function runWorker(options: WorkerClientOptions, signal: AbortSignal): Promise<void> {
     const { workerId, client, registry } = options;
+    let retryMs = BASE_RETRY_MS;
 
-    logger.info({ workerId }, 'subscribing to jobs');
+    while (!signal.aborted) {
+        try {
+            logger.info({ workerId }, 'subscribing to jobs');
+            const stream = client.subscribeToJobs({ workerId, capabilities: [] }, { signal });
 
-    const stream = client.subscribeToJobs({ workerId, capabilities: [] }, { signal });
-
-    try {
-        for await (const assignment of stream) {
-            await processAssignment(assignment, client, registry);
+            for await (const assignment of stream) {
+                retryMs = BASE_RETRY_MS;
+                await processAssignment(assignment, client, registry);
+            }
+        } catch (err: unknown) {
+            if (signal.aborted) {
+                logger.info('worker shutting down');
+                return;
+            }
+            logger.warn({ err, retryMs }, 'connection lost, reconnecting');
+            await sleep(retryMs, signal);
+            retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
         }
-    } catch (err: unknown) {
-        if (signal.aborted) {
-            logger.info('worker shutting down');
-            return;
-        }
-        throw err;
     }
+}
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+    return new Promise((resolve) => {
+        const timer = setTimeout(resolve, ms);
+        signal.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
+    });
 }
 
 async function processAssignment(

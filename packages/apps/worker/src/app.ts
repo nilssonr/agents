@@ -19,7 +19,7 @@ export interface App {
 export function createApp(): App {
     const config = loadConfig({
         workerId: { env: 'WORKER_ID', default: `worker-${Date.now().toString(36)}` },
-        grpcAddress: { env: 'GRPC_ADDRESS', default: 'localhost:50051' },
+        grpcAddress: { env: 'GRPC_ADDRESS' },
     });
 
     const channel = createChannel(config.grpcAddress);

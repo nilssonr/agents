@@ -8,7 +8,8 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "test": "vitest run",
-        "docker:up": "docker compose up -d",
+        "dev": "pnpm --filter @agents/control-plane --filter @agents/worker --parallel dev",
+"docker:up": "docker compose up -d",
         "docker:down": "docker compose down"
     },
     "pnpm": {

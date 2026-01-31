@@ -26,9 +26,9 @@ export interface App {
 export function createApp(): App {
     // Config
     const config = loadConfig({
-        httpPort: { env: 'HTTP_PORT', default: '3000' },
-        grpcPort: { env: 'GRPC_PORT', default: '50051' },
-        databaseUrl: { env: 'DATABASE_URL', default: 'postgres://agents:agents@localhost:5444/agents' },
+        httpPort: { env: 'HTTP_PORT' },
+        grpcPort: { env: 'GRPC_PORT' },
+        databaseUrl: { env: 'DATABASE_URL' },
         cronIntervalMs: { env: 'CRON_INTERVAL_MS', default: '60000' },
         grpcPollIntervalMs: { env: 'GRPC_POLL_INTERVAL_MS', default: '1000' },
     });
