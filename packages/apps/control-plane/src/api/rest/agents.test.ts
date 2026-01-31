@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 
-import { buildApp } from '../../app.js';
+import { buildRestServer } from './server.js';
 import { createAgentService } from '../../features/agents/agent-service.js';
 import { createJobService } from '../../features/jobs/job-service.js';
 import { createFakeAgentRepository } from '../../features/agents/fake-agent-repository.js';
@@ -19,7 +19,7 @@ describe('Agent routes', () => {
         const jobRepo = createFakeJobRepository();
         agentService = createAgentService(agentRepo, jobRepo);
         jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure);
-        app = buildApp({ agentService, jobService });
+        app = buildRestServer({ agentService, jobService });
     });
 
     it('POST /agents creates an agent', async () => {

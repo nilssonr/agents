@@ -3,9 +3,9 @@ import pg from 'pg';
 import { loadConfig } from '@agents/config';
 import { createLogger } from '@agents/logger';
 
-import { buildApp } from './app.js';
 import { startGrpcServer } from './api/grpc/server.js';
 import { createWorkerServiceImpl } from './api/grpc/worker-service-impl.js';
+import { buildRestServer } from './api/rest/server.js';
 import { createPgAgentRepository } from './adapters/postgres/pg-agent-repository.js';
 import { createPgJobRepository } from './adapters/postgres/pg-job-repository.js';
 import { createPgTriggerRepository } from './adapters/postgres/pg-trigger-repository.js';
@@ -32,7 +32,7 @@ const triggerRepo = createPgTriggerRepository(pool);
 const agentService = createAgentService(agentRepo, jobRepo);
 const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure);
 
-const app = buildApp({ agentService, jobService });
+const app = buildRestServer({ agentService, jobService });
 
 const workerImpl = createWorkerServiceImpl(agentService, jobService, {
     pollIntervalMs: Number(config.grpcPollIntervalMs),
