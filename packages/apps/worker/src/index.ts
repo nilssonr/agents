@@ -4,8 +4,8 @@ import { loadConfig } from '@agents/config';
 import { WorkerServiceDefinition } from '@agents/contracts';
 import { createLogger } from '@agents/logger';
 
-import { createActivityRegistry } from './activity-registry.js';
-import { runWorker } from './worker-client.js';
+import { createActivityRegistry } from './features/activities/activity-registry.js';
+import { runWorker } from './adapters/grpc/worker-client.js';
 
 const logger = createLogger('worker');
 

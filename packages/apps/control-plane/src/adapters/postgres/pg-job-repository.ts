@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
 
-import * as db from '../db/jobs_sql.js';
-import type { JobRepository, JobRow } from './types.js';
+import * as db from '../../db/jobs_sql.js';
+import type { JobRepository, JobRow } from '../../features/jobs/job-repository.js';
 
 function toJobRow(row: db.CreateJobRow | db.ListJobsByAgentRow | db.ClaimJobRow): JobRow {
     return {

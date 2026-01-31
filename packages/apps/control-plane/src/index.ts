@@ -4,14 +4,14 @@ import { loadConfig } from '@agents/config';
 import { createLogger } from '@agents/logger';
 
 import { buildApp } from './app.js';
-import { startGrpcServer } from './grpc/server.js';
-import { createWorkerServiceImpl } from './grpc/worker-service-impl.js';
-import { createPgAgentRepository } from './repositories/pg-agent-repository.js';
-import { createPgJobRepository } from './repositories/pg-job-repository.js';
-import { createPgTriggerRepository } from './repositories/pg-trigger-repository.js';
-import { createCronScheduler } from './scheduler/cron-scheduler.js';
-import { createAgentService } from './services/agent-service.js';
-import { createJobService } from './services/job-service.js';
+import { startGrpcServer } from './adapters/grpc/server.js';
+import { createWorkerServiceImpl } from './adapters/grpc/worker-service-impl.js';
+import { createPgAgentRepository } from './adapters/postgres/pg-agent-repository.js';
+import { createPgJobRepository } from './adapters/postgres/pg-job-repository.js';
+import { createPgTriggerRepository } from './adapters/postgres/pg-trigger-repository.js';
+import { createCronScheduler } from './features/scheduler/cron-scheduler.js';
+import { createAgentService } from './features/agents/agent-service.js';
+import { createJobService } from './features/jobs/job-service.js';
 
 const logger = createLogger('control-plane');
 

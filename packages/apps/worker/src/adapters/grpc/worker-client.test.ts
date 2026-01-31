@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { WorkerServiceClient, JobAssignment, JobResult, JobAck } from '@agents/contracts';
 
-import { createActivityRegistry } from './activity-registry.js';
+import { createActivityRegistry } from '../../features/activities/activity-registry.js';
 import { runWorker } from './worker-client.js';
 
 function createFakeClient(assignments: JobAssignment[]): WorkerServiceClient & { reported: JobResult[] } {

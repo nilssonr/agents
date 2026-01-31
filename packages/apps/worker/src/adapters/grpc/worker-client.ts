@@ -1,7 +1,7 @@
 import type { WorkerServiceClient, JobAssignment } from '@agents/contracts';
 import { createLogger } from '@agents/logger';
 
-import type { ActivityRegistry } from './activity-registry.js';
+import type { ActivityRegistry } from '../../features/activities/activity-registry.js';
 
 const logger = createLogger('worker-client');
 

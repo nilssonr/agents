@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 
-import { createFakeAgentRepository, createFakeJobRepository } from '../testing/fake-repositories.js';
+import { createFakeAgentRepository } from '../agents/fake-agent-repository.js';
+import { createFakeJobRepository } from './fake-job-repository.js';
 import { createJobService } from './job-service.js';
 import type { JobService } from './job-service.js';
 

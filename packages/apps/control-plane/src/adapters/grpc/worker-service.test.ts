@@ -5,11 +5,12 @@ import type { Server, ServiceImplementation } from 'nice-grpc';
 import { WorkerServiceDefinition } from '@agents/contracts';
 import type { WorkerServiceClient } from '@agents/contracts';
 
-import { createAgentService } from '../services/agent-service.js';
-import { createJobService } from '../services/job-service.js';
-import { createFakeAgentRepository, createFakeJobRepository } from '../testing/fake-repositories.js';
-import type { AgentService } from '../services/agent-service.js';
-import type { JobService } from '../services/job-service.js';
+import { createAgentService } from '../../features/agents/agent-service.js';
+import { createJobService } from '../../features/jobs/job-service.js';
+import { createFakeAgentRepository } from '../../features/agents/fake-agent-repository.js';
+import { createFakeJobRepository } from '../../features/jobs/fake-job-repository.js';
+import type { AgentService } from '../../features/agents/agent-service.js';
+import type { JobService } from '../../features/jobs/job-service.js';
 import { createWorkerServiceImpl } from './worker-service-impl.js';
 
 describe('WorkerService gRPC', () => {

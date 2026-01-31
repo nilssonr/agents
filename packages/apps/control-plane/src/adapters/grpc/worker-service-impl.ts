@@ -2,9 +2,9 @@ import type { CallContext } from 'nice-grpc-common';
 
 import type { DeepPartial, JobAssignment, SubscribeRequest, JobResult, JobAck, WorkerServiceImplementation } from '@agents/contracts';
 
-import type { AgentRow } from '../repositories/types.js';
-import type { AgentService } from '../services/agent-service.js';
-import type { JobService } from '../services/job-service.js';
+import type { AgentRow } from '../../features/agents/agent-repository.js';
+import type { AgentService } from '../../features/agents/agent-service.js';
+import type { JobService } from '../../features/jobs/job-service.js';
 
 export interface WorkerServiceOptions {
     pollIntervalMs: number;

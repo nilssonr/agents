@@ -2,8 +2,8 @@ import { Cron } from 'croner';
 
 import { createLogger } from '@agents/logger';
 
-import type { TriggerRepository } from '../repositories/types.js';
-import type { AgentService } from '../services/agent-service.js';
+import type { TriggerRepository } from '../triggers/trigger-repository.js';
+import type { AgentService } from '../agents/agent-service.js';
 
 const logger = createLogger('cron-scheduler');
 

@@ -1,4 +1,5 @@
-import type { AgentRepository, AgentRow, JobRepository, JobRow } from '../repositories/types.js';
+import type { AgentRepository, AgentRow } from './agent-repository.js';
+import type { JobRepository, JobRow } from '../jobs/job-repository.js';
 
 export interface AgentService {
     createAgent(name: string, activities: unknown, failureThreshold: number): Promise<AgentRow>;

@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
 
-import * as db from '../db/triggers_sql.js';
-import type { TriggerRepository, TriggerRow } from './types.js';
+import * as db from '../../db/triggers_sql.js';
+import type { TriggerRepository, TriggerRow } from '../../features/triggers/trigger-repository.js';
 
 function toTriggerRow(row: db.CreateTriggerRow | db.GetTriggersByAgentRow): TriggerRow {
     return {
