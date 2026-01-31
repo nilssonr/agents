@@ -16,6 +16,7 @@ function toJobRow(row: db.CreateJobRow | db.ListJobsByAgentRow | db.ClaimJobRow)
     };
 }
 
+/** Creates a {@link JobRepository} backed by PostgreSQL using sqlc-generated queries. */
 export function createPgJobRepository(pool: Pool): JobRepository {
     return {
         async create(agentId, payload): Promise<JobRow> {

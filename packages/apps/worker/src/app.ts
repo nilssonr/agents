@@ -6,11 +6,16 @@ import { WorkerServiceDefinition } from '@agents/contracts';
 import { createActivityRegistry } from './features/activities/activity-registry.js';
 import { runWorker } from './adapters/grpc/worker-client.js';
 
+/** The worker application handle with lifecycle methods. */
 export interface App {
     start(): Promise<void>;
     shutdown(): void;
 }
 
+/**
+ * Wires together the worker dependencies — gRPC client and activity registry —
+ * and returns an {@link App} handle to start polling for jobs and shut down.
+ */
 export function createApp(): App {
     const config = loadConfig({
         workerId: { env: 'WORKER_ID', default: `worker-${Date.now().toString(36)}` },

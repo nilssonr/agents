@@ -1,6 +1,7 @@
 import type { AgentRepository, AgentRow } from './agent-repository.js';
 import type { JobRepository, JobRow } from '../jobs/job-repository.js';
 
+/** High-level operations on agents: creation, invocation, failure handling, and restart. */
 export interface AgentService {
     createAgent(name: string, activities: unknown, failureThreshold: number): Promise<AgentRow>;
     getAgent(id: string): Promise<AgentRow | null>;
@@ -11,6 +12,13 @@ export interface AgentService {
     handleJobFailure(agentId: string): Promise<void>;
 }
 
+/**
+ * Creates an {@link AgentService} backed by the given repositories.
+ *
+ * Invoking an agent creates a pending job. Repeated job failures increment the
+ * agent's failure counter and automatically pause the agent once its threshold
+ * is reached.
+ */
 export function createAgentService(agents: AgentRepository, jobs: JobRepository): AgentService {
     return {
         async createAgent(name, activities, failureThreshold): Promise<AgentRow> {
@@ -57,6 +65,7 @@ export function createAgentService(agents: AgentRepository, jobs: JobRepository)
     };
 }
 
+/** Thrown when an operation targets an agent id that does not exist. */
 export class AgentNotFoundError extends Error {
     constructor(id: string) {
         super(`Agent not found: ${id}`);
@@ -64,6 +73,7 @@ export class AgentNotFoundError extends Error {
     }
 }
 
+/** Thrown when attempting to invoke an agent that has been paused due to failures. */
 export class AgentPausedError extends Error {
     constructor(id: string) {
         super(`Agent is paused: ${id}`);

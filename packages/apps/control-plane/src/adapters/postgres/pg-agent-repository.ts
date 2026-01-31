@@ -16,6 +16,7 @@ function toAgentRow(row: db.CreateAgentRow | db.GetAgentRow | db.ListAgentsRow |
     };
 }
 
+/** Creates an {@link AgentRepository} backed by PostgreSQL using sqlc-generated queries. */
 export function createPgAgentRepository(pool: Pool): AgentRepository {
     return {
         async create(name, activities, failureThreshold): Promise<AgentRow> {

@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto';
 
 import type { TriggerRepository, TriggerRow } from './trigger-repository.js';
 
+/**
+ * In-memory {@link TriggerRepository} for use in tests.
+ * Exposes the underlying `triggers` array for direct assertion.
+ */
 export function createFakeTriggerRepository(): TriggerRepository & { triggers: TriggerRow[] } {
     const triggers: TriggerRow[] = [];
 

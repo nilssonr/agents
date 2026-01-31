@@ -5,12 +5,19 @@ import type { ActivityRegistry } from '../../features/activities/activity-regist
 
 const logger = createLogger('worker-client');
 
+/** Configuration for connecting a worker to the control-plane's gRPC stream. */
 export interface WorkerClientOptions {
     workerId: string;
     client: WorkerServiceClient;
     registry: ActivityRegistry;
 }
 
+/**
+ * Subscribes to the control-plane's job stream and processes assignments
+ * using the activity registry. Each assignment is executed and the result
+ * (success or failure) is reported back over gRPC. Runs until the signal
+ * is aborted.
+ */
 export async function runWorker(options: WorkerClientOptions, signal: AbortSignal): Promise<void> {
     const { workerId, client, registry } = options;
 

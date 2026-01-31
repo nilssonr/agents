@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto';
 
 import type { AgentRepository, AgentRow } from './agent-repository.js';
 
+/**
+ * In-memory {@link AgentRepository} for use in tests.
+ * Exposes the underlying `agents` array for direct assertion.
+ */
 export function createFakeAgentRepository(): AgentRepository & { agents: AgentRow[] } {
     const agents: AgentRow[] = [];
 

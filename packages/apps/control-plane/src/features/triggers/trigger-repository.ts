@@ -1,3 +1,4 @@
+/** Persistent representation of a trigger as stored in the database. */
 export interface TriggerRow {
     id: string;
     agent_id: string;
@@ -6,6 +7,7 @@ export interface TriggerRow {
     created_at: Date;
 }
 
+/** Storage contract for trigger CRUD and cron-specific queries. */
 export interface TriggerRepository {
     create(agentId: string, kind: string, cronExpression: string | null): Promise<TriggerRow>;
     getByAgent(agentId: string): Promise<TriggerRow[]>;

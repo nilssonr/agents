@@ -6,10 +6,18 @@ import type { AgentRow } from '../../features/agents/agent-repository.js';
 import type { AgentService } from '../../features/agents/agent-service.js';
 import type { JobService } from '../../features/jobs/job-service.js';
 
+/** Configuration for the gRPC WorkerService server-side implementation. */
 export interface WorkerServiceOptions {
     pollIntervalMs: number;
 }
 
+/**
+ * Builds the server-side gRPC WorkerService implementation.
+ *
+ * `subscribeToJobs` polls all active agents for pending jobs at a fixed interval
+ * and streams assignments to connected workers. `reportJobResult` processes
+ * completion or failure results reported back by workers.
+ */
 export function createWorkerServiceImpl(
     agentService: AgentService,
     jobService: JobService,

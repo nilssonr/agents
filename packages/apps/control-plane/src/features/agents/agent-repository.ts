@@ -1,3 +1,4 @@
+/** Persistent representation of an agent as stored in the database. */
 export interface AgentRow {
     id: string;
     name: string;
@@ -9,6 +10,7 @@ export interface AgentRow {
     updated_at: Date;
 }
 
+/** Storage contract for agent CRUD and lifecycle operations. */
 export interface AgentRepository {
     create(name: string, activities: unknown, failureThreshold: number): Promise<AgentRow>;
     get(id: string): Promise<AgentRow | null>;

@@ -7,11 +7,19 @@ import type { AgentService } from '../agents/agent-service.js';
 
 const logger = createLogger('cron-scheduler');
 
+/** Controls the lifecycle of a polling-based cron scheduler. */
 export interface CronScheduler {
     start(): void;
     stop(): void;
 }
 
+/**
+ * Creates a scheduler that polls for cron triggers at a fixed interval.
+ *
+ * Each tick evaluates all cron triggers. When a trigger's next run falls within
+ * the current interval and hasn't already fired, the scheduler invokes the
+ * associated agent with a cron payload.
+ */
 export function createCronScheduler(
     triggerRepo: TriggerRepository,
     agentService: AgentService,

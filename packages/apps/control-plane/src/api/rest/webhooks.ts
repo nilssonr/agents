@@ -2,6 +2,10 @@ import type { FastifyInstance } from 'fastify';
 
 import type { AgentService } from '../../features/agents/agent-service.js';
 
+/**
+ * Registers the `/webhooks/:agentId` route that allows external systems to
+ * invoke an agent by posting an arbitrary payload.
+ */
 export function registerWebhookRoutes(app: FastifyInstance, deps: { agentService: AgentService }): void {
     app.post('/webhooks/:agentId', async (request, reply) => {
         const { agentId } = request.params as { agentId: string };

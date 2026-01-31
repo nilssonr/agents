@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto';
 
 import type { JobRepository, JobRow } from './job-repository.js';
 
+/**
+ * In-memory {@link JobRepository} for use in tests.
+ * Exposes the underlying `jobs` array for direct assertion.
+ */
 export function createFakeJobRepository(): JobRepository & { jobs: JobRow[] } {
     const jobs: JobRow[] = [];
 

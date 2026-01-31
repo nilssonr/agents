@@ -1,6 +1,7 @@
 import type { AgentRepository } from '../agents/agent-repository.js';
 import type { JobRepository, JobRow } from './job-repository.js';
 
+/** High-level operations on jobs: listing, claiming, completion, and failure reporting. */
 export interface JobService {
     getJobsForAgent(agentId: string, status?: string): Promise<JobRow[]>;
     claimNextJob(agentId: string): Promise<JobRow | null>;
@@ -8,6 +9,13 @@ export interface JobService {
     failJob(jobId: string, agentId: string, error: string): Promise<void>;
 }
 
+/**
+ * Creates a {@link JobService} backed by the given repositories.
+ *
+ * Completing a job resets the owning agent's failure counter. Failing a job
+ * delegates to `onJobFailure` so the agent service can track failures and
+ * potentially pause the agent.
+ */
 export function createJobService(
     jobs: JobRepository,
     agents: AgentRepository,

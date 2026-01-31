@@ -12,11 +12,17 @@ import { startGrpcServer } from './api/grpc/server.js';
 import { createWorkerServiceImpl } from './api/grpc/worker-service-impl.js';
 import { buildRestServer } from './api/rest/server.js';
 
+/** The control-plane application handle with lifecycle methods. */
 export interface App {
     start(): Promise<string>;
     shutdown(): Promise<void>;
 }
 
+/**
+ * Wires together all control-plane dependencies — postgres repositories,
+ * domain services, cron scheduler, REST API, and gRPC server — and returns
+ * an {@link App} handle to start and shut everything down.
+ */
 export function createApp(): App {
     // Config
     const config = loadConfig({

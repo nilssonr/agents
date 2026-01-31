@@ -3,6 +3,9 @@ import type { FastifyInstance } from 'fastify';
 import type { AgentService } from '../../features/agents/agent-service.js';
 import type { JobService } from '../../features/jobs/job-service.js';
 
+/**
+ * Registers the `/agents` REST routes for CRUD, invocation, restart, and job listing.
+ */
 export function registerAgentRoutes(app: FastifyInstance, deps: { agentService: AgentService; jobService: JobService }): void {
     app.post('/agents', async (request, reply) => {
         const body = request.body as { name: string; activities?: unknown; failure_threshold?: number };

@@ -13,6 +13,7 @@ function toTriggerRow(row: db.CreateTriggerRow | db.GetTriggersByAgentRow): Trig
     };
 }
 
+/** Creates a {@link TriggerRepository} backed by PostgreSQL using sqlc-generated queries. */
 export function createPgTriggerRepository(pool: Pool): TriggerRepository {
     return {
         async create(agentId, kind, cronExpression): Promise<TriggerRow> {
