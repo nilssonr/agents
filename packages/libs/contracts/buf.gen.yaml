@@ -1,0 +1,13 @@
+version: v2
+plugins:
+    - local: protoc-gen-ts_proto
+      out: src/generated
+      strategy: all
+      opt:
+          - outputServices=nice-grpc
+          - outputServices=generic-definitions
+          - useExactTypes=true
+          - esModuleInterop=true
+          - importSuffix=.js
+inputs:
+    - directory: proto

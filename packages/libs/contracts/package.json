@@ -1,0 +1,29 @@
+{
+    "name": "@agents/contracts",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "scripts": {
+        "generate": "buf generate",
+        "build": "buf generate && tsc"
+    },
+    "dependencies": {
+        "@grpc/grpc-js": "^1.12.0",
+        "long": "^5.2.0",
+        "nice-grpc": "^2.1.0",
+        "nice-grpc-common": "^2.0.0",
+        "protobufjs": "^7.4.0"
+    },
+    "devDependencies": {
+        "@bufbuild/buf": "^1.50.0",
+        "ts-proto": "^2.6.0"
+    }
+}

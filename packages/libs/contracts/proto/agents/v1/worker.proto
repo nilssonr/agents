@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package agents.v1;
+
+// TODO: Define RPCs for control-plane → worker communication
+service WorkerService {}
