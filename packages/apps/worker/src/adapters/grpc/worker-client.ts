@@ -25,6 +25,7 @@ const MAX_RETRY_MS = 30000;
 export async function runWorker(options: WorkerClientOptions, signal: AbortSignal): Promise<void> {
     const { workerId, client, registry } = options;
     let retryMs = BASE_RETRY_MS;
+    let connected = false;
 
     while (!signal.aborted) {
         try {
@@ -32,6 +33,7 @@ export async function runWorker(options: WorkerClientOptions, signal: AbortSigna
             const stream = client.subscribeToJobs({ workerId, capabilities: [] }, { signal });
 
             for await (const assignment of stream) {
+                connected = true;
                 retryMs = BASE_RETRY_MS;
                 await processAssignment(assignment, client, registry);
             }
@@ -40,7 +42,11 @@ export async function runWorker(options: WorkerClientOptions, signal: AbortSigna
                 logger.info('worker shutting down');
                 return;
             }
-            logger.warn({ err, retryMs }, 'connection lost, reconnecting');
+            if (connected) {
+                logger.warn({ err, retryMs }, 'connection lost, reconnecting');
+            } else {
+                logger.info({ retryMs }, 'control-plane not ready, retrying');
+            }
             await sleep(retryMs, signal);
             retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
         }
