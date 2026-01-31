@@ -1,13 +1,13 @@
-import { fileURLToPath } from 'node:url';
-
 import pino from 'pino';
 
+import { createTransportStream } from './transport.js';
+
 export function createLogger(name: string, level?: string): pino.Logger {
-    return pino({
-        name,
-        level: level ?? 'info',
-        transport: {
-            target: fileURLToPath(new URL('./transport.js', import.meta.url)),
+    return pino(
+        {
+            name,
+            level: level ?? 'info',
         },
-    });
+        createTransportStream(),
+    );
 }

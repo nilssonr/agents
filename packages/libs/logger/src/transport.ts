@@ -1,4 +1,4 @@
-import build from 'pino-abstract-transport';
+import { Transform } from 'node:stream';
 
 const LEVEL_LABELS: Record<number, string> = {
     10: 'TRACE',
@@ -20,11 +20,14 @@ function formatTimestamp(epochMs: number): string {
     return `${iso}${sign}${hours}:${minutes}`;
 }
 
-export default function (): ReturnType<typeof build> {
-    return build(function (source) {
-        source.on('data', function (obj: Record<string, unknown>) {
+export function createTransportStream(): Transform {
+    return new Transform({
+        objectMode: true,
+        transform(chunk: string, _encoding, callback): void {
+            const obj = JSON.parse(chunk) as Record<string, unknown>;
             const time = typeof obj['time'] === 'number' ? obj['time'] : Date.now();
-            const level = typeof obj['level'] === 'number' ? (LEVEL_LABELS[obj['level']] ?? 'UNKNOWN') : 'UNKNOWN';
+            const level =
+                typeof obj['level'] === 'number' ? (LEVEL_LABELS[obj['level']] ?? 'UNKNOWN') : 'UNKNOWN';
             const msg = typeof obj['msg'] === 'string' ? obj['msg'] : '';
 
             const fields: Record<string, unknown> = {};
@@ -38,6 +41,7 @@ export default function (): ReturnType<typeof build> {
             const timestamp = formatTimestamp(time);
 
             process.stdout.write(`[${timestamp}] ${level} - ${msg}${fieldStr}\n`);
-        });
+            callback();
+        },
     });
 }

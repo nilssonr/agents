@@ -2,5 +2,32 @@ syntax = "proto3";
 
 package agents.v1;
 
-// TODO: Define RPCs for control-plane → worker communication
-service WorkerService {}
+service WorkerService {
+    rpc SubscribeToJobs(SubscribeRequest) returns (stream JobAssignment);
+    rpc ReportJobResult(JobResult) returns (JobAck);
+}
+
+message SubscribeRequest {
+    string worker_id = 1;
+    repeated string capabilities = 2;
+}
+
+message JobAssignment {
+    string job_id = 1;
+    string agent_id = 2;
+    string activity_type = 3;
+    string params_json = 4;
+    string payload_json = 5;
+}
+
+message JobResult {
+    string job_id = 1;
+    string agent_id = 2;
+    bool success = 3;
+    string result_json = 4;
+    string error = 5;
+}
+
+message JobAck {
+    bool accepted = 1;
+}
