@@ -172,20 +172,28 @@ Migrations run automatically on control-plane startup.
 
 ### Agents
 
-| Method | Path                  | Description                     |
-| ------ | --------------------- | ------------------------------- |
-| POST   | `/agents`             | Create an agent (Zod-validated) |
-| GET    | `/agents`             | List all agents                 |
-| GET    | `/agents/:id`         | Get an agent                    |
-| DELETE | `/agents/:id`         | Delete an agent                 |
-| POST   | `/agents/:id/invoke`  | Invoke an agent (create a job)  |
-| POST   | `/agents/:id/restart` | Restart a paused agent          |
-| GET    | `/agents/:id/jobs`    | List jobs for an agent          |
+| Method | Path                  | Description                       |
+| ------ | --------------------- | --------------------------------- |
+| POST   | `/agents`             | Create an agent (Zod-validated)   |
+| GET    | `/agents`             | List all agents                   |
+| GET    | `/agents/:id`         | Get an agent                      |
+| PATCH  | `/agents/:id`         | Update an agent (partial updates) |
+| DELETE | `/agents/:id`         | Delete an agent                   |
+| POST   | `/agents/:id/invoke`  | Invoke an agent (create a job)    |
+| POST   | `/agents/:id/restart` | Restart a paused agent            |
+| GET    | `/agents/:id/jobs`    | List jobs for an agent            |
+
+### Activities
+
+| Method | Path          | Description                                      |
+| ------ | ------------- | ------------------------------------------------ |
+| GET    | `/activities` | List available activity types with param schemas |
 
 ### Jobs
 
 | Method | Path             | Description        |
 | ------ | ---------------- | ------------------ |
+| GET    | `/jobs/:id`      | Get job details    |
 | GET    | `/jobs/:id/logs` | Get logs for a job |
 
 ### Health
@@ -255,11 +263,13 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 
 ## Built-in Activities
 
-| Activity       | Description                                                       |
-| -------------- | ----------------------------------------------------------------- |
-| `noop`         | No-op placeholder, returns `{ ok: true }`                         |
-| `http-request` | Zod-validated HTTP client with context-aware parameter resolution |
-| `log`          | Emits a structured log entry at a specified level                 |
+| Activity       | Description                                                       | Required Params                   |
+| -------------- | ----------------------------------------------------------------- | --------------------------------- |
+| `noop`         | No-op placeholder, returns `{ ok: true }`                         | _(none)_                          |
+| `http-request` | Zod-validated HTTP client with context-aware parameter resolution | `url` (string), `method` (string) |
+| `log`          | Emits a structured log entry at a specified level                 | `message` (string)                |
+
+Activity params accept plain values (e.g. `{ "message": "hello" }`) which are auto-coerced to `{ type: "literal", value: "hello" }`. Use `{ type: "context", ref: "stepId.field" }` to reference outputs from previous steps.
 
 ## Fault Tolerance
 
@@ -320,7 +330,8 @@ A React-based management dashboard for agents and jobs. Built with Vite, Tailwin
 
 - **Dashboard** — Agent count and health status
 - **Agents** — List, create, delete agents with status badges
-- **Agent Detail** — View agent info, invoke with JSON payload, restart paused agents, browse jobs
+- **Agent Detail** — View agent info, restart paused agents, browse jobs
+- **Workflow Editor** — Visual drag-and-drop editor for agent activity flows (React Flow), with activity sidebar, property panel, invoke panel, and layout persistence
 - **Job Detail** — View job logs with level badges and step IDs
 
 **Development:**

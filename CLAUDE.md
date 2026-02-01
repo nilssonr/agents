@@ -79,7 +79,7 @@ index.ts           # Creates the app, starts it, handles process signals
 
 | Feature       | Location                                | Description                                                                                                       |
 | ------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **agents**    | `control-plane/src/features/agents/`    | Agent CRUD, invocation, failure tracking (auto-pause at threshold), restart                                       |
+| **agents**    | `control-plane/src/features/agents/`    | Agent CRUD, update, invocation, failure tracking (auto-pause at threshold), restart                               |
 | **jobs**      | `control-plane/src/features/jobs/`      | Job lifecycle: claim, complete, fail, multi-step routing via flow service, stale job reaping, context size limits |
 | **flows**     | `control-plane/src/features/flows/`     | Multi-step orchestration: step parsing, success/failure transitions, retry logic, error handlers                  |
 | **logs**      | `control-plane/src/features/logs/`      | Batch append and retrieval of structured job execution logs                                                       |
@@ -98,12 +98,13 @@ index.ts           # Creates the app, starts it, handles process signals
 
 React management UI using Vite, Tailwind CSS, shadcn/ui, TanStack Router, and TanStack React Query.
 
-| Feature    | Location                     | Description                                                                                                                                                    |
-| ---------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **hooks**  | `web/src/hooks/`             | React Query hooks: `useAgents`, `useAgent`, `useCreateAgent`, `useDeleteAgent`, `useInvokeAgent`, `useRestartAgent`, `useAgentJobs`, `useJobLogs`, `useHealth` |
-| **routes** | `web/src/routes/`            | Dashboard (`/`), agent list (`/agents`), agent detail (`/agents/$agentId`), job detail (`/jobs/$jobId`)                                                        |
-| **layout** | `web/src/components/layout/` | Sidebar navigation + app shell                                                                                                                                 |
-| **ui**     | `web/src/components/ui/`     | shadcn/ui components: button, card, badge, dialog, input, table, textarea, skeleton, separator                                                                 |
+| Feature      | Location                       | Description                                                                                                                                                                                                 |
+| ------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **hooks**    | `web/src/hooks/`               | React Query hooks: `useAgents`, `useAgent`, `useCreateAgent`, `useUpdateAgent`, `useDeleteAgent`, `useInvokeAgent`, `useRestartAgent`, `useAgentJobs`, `useJob`, `useJobLogs`, `useHealth`, `useActivities` |
+| **routes**   | `web/src/routes/`              | Dashboard (`/`), agent list (`/agents`), agent detail (`/agents/$agentId`), workflow editor (`/agents/$agentId/editor`), job detail (`/jobs/$jobId`)                                                        |
+| **workflow** | `web/src/components/workflow/` | React Flow visual workflow editor: canvas, activity sidebar, property panel, invoke panel, start/end nodes, flow converter. Node IDs use activity type prefix (e.g. `http-request-0`)                       |
+| **layout**   | `web/src/components/layout/`   | Sidebar navigation + app shell                                                                                                                                                                              |
+| **ui**       | `web/src/components/ui/`       | shadcn/ui components: button, card, badge, dialog, input, table, textarea, skeleton, separator                                                                                                              |
 
 ### SDK (`packages/libs/sdk`)
 
@@ -117,7 +118,7 @@ Typed OpenAPI client generated from the control-plane spec.
 
 ### Database tables
 
-- **agents** — `id`, `name`, `status` (active/paused), `activities` (JSONB flow definition), `failure_threshold`, `failure_count`
+- **agents** — `id`, `name`, `status` (active/paused), `activities` (JSONB flow definition), `failure_threshold`, `failure_count`, `editor_layout` (JSONB, nullable)
 - **jobs** — `id`, `agent_id`, `status` (pending/running/completed/failed), `payload`, `result`, `error`, `current_step_id`, `context`, `step_retries`
 - **triggers** — `id`, `agent_id`, `kind` (cron/webhook), `cron_expression`, `last_fired_at`
 - **job_logs** — `id`, `job_id`, `step_id`, `level`, `message`, `metadata`
@@ -126,11 +127,11 @@ Schema lives in `control-plane/sql/schema.sql`. Migrations in `control-plane/sql
 
 ### Key domain types
 
-- **AgentRow** — `{ id, name, status, activities, failure_threshold, failure_count, created_at, updated_at }`
+- **AgentRow** — `{ id, name, status, activities, failure_threshold, failure_count, editor_layout, created_at, updated_at }`
 - **JobRow** — `{ id, agent_id, status, payload, result, error, current_step_id, context, step_retries, created_at, updated_at }`
-- **FlowStep** — `{ id, type, params?, maxRetries?, onError? }`
+- **FlowStep** — `{ id, type, label?, params?, maxRetries?, onError? }`
 - **FlowContext** — `{ [stepId]: result }` — accumulated step outputs
-- **ValueSource\<T\>** — `{ type: 'literal', value: T }` or `{ type: 'context', ref: string }` for dot-path context lookup
+- **ValueSource\<T\>** — `{ type: 'literal', value: T }` or `{ type: 'context', ref: string }` for dot-path context lookup. Plain values are auto-coerced to literal form (e.g. `"hello"` → `{ type: 'literal', value: 'hello' }`)
 - **ActivityFn** — `(params, payload, context, logger) => Promise<unknown>`
 
 ### Error classes
@@ -146,13 +147,19 @@ Schema lives in `control-plane/sql/schema.sql`. Migrations in `control-plane/sql
 - `POST /agents` — Create agent (body: `{ name, activities?, failure_threshold? }`, Zod-validated) → 201
 - `GET /agents` — List all agents
 - `GET /agents/:id` — Get agent
+- `PATCH /agents/:id` — Update agent (body: `{ name?, activities?, failure_threshold?, editor_layout? }`) → 200
 - `DELETE /agents/:id` — Delete agent
 - `POST /agents/:id/invoke` — Invoke agent (body: arbitrary payload) → 202
 - `POST /agents/:id/restart` — Reset failure counter, set status to active
 - `GET /agents/:id/jobs` — List jobs (query: `?status=pending|running|completed|failed`)
 
+### Activities
+
+- `GET /activities` — List available activity types with parameter schemas
+
 ### Jobs
 
+- `GET /jobs/:id` — Get job details
 - `GET /jobs/:id/logs` — Get logs for a job
 
 ### Health
@@ -252,4 +259,4 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 
 ## Verification
 
-Always run `pnpm build && pnpm lint && pnpm format:check && pnpm test` after changes. Currently 172 tests across 33 test files (166 backend + 6 web).
+Always run `pnpm build && pnpm lint && pnpm format:check && pnpm test` after changes. Currently 185 tests across 33 test files (179 backend + 6 web).
