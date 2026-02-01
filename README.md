@@ -54,6 +54,10 @@ The **control-plane** manages agents, schedules jobs, orchestrates multi-step fl
 | Scheduling  | croner                               |
 | Logging     | pino                                 |
 | Testing     | Vitest                               |
+| Web UI      | React 19, Vite, Tailwind CSS, shadcn/ui |
+| API Client  | openapi-fetch (typed from OpenAPI spec) |
+| Routing     | TanStack Router                      |
+| Data        | TanStack React Query                 |
 | Monorepo    | pnpm workspaces                      |
 
 ## Project Structure
@@ -88,12 +92,18 @@ packages/
           grpc/          # gRPC client with reconnection
         app.ts           # Composition root
         index.ts         # Entry point
+    web/                 # React management UI (Vite + TanStack Router/Query)
+      src/
+        components/      # UI components (shadcn/ui) and layout
+        hooks/           # React Query hooks for API data fetching
+        routes/          # TanStack Router file-based routes
   libs/
     config/              # Env-based config loader
     contracts/           # Protobuf definitions + generated gRPC types
     logger/              # Structured logger (pino)
     metrics/             # Shared Prometheus metrics server
     migrations/          # SQL migration runner
+    sdk/                 # Typed OpenAPI client (openapi-fetch)
 ```
 
 ## Getting Started
@@ -288,6 +298,7 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | `GRPC_POLL_INTERVAL_MS` | No   | 1000    | Job polling interval (ms)       |
 | `METRICS_PORT`       | No       | 9090    | Prometheus metrics HTTP server port |
 | `MAX_CONTEXT_SIZE_BYTES` | No  | 1048576 | Maximum flow context size in bytes  |
+| `CORS_ORIGIN`  | No       | —       | Allowed CORS origin (enables CORS when set) |
 
 ### Worker
 
@@ -299,6 +310,24 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | `SHUTDOWN_GRACE_MS` | No   | 10000              | Grace period for in-flight work on shutdown (ms) |
 | `METRICS_PORT`  | No       | 9090               | Worker metrics HTTP server port  |
 | `WORKER_CONCURRENCY` | No  | 1                  | Max concurrent activity executions |
+
+## Web UI
+
+A React-based management dashboard for agents and jobs. Built with Vite, Tailwind CSS, shadcn/ui components, TanStack Router, and TanStack React Query.
+
+**Pages:**
+- **Dashboard** — Agent count and health status
+- **Agents** — List, create, delete agents with status badges
+- **Agent Detail** — View agent info, invoke with JSON payload, restart paused agents, browse jobs
+- **Job Detail** — View job logs with level badges and step IDs
+
+**Development:**
+```bash
+# Start the web UI dev server (proxies /api to localhost:3000)
+pnpm --filter @agents/web dev
+```
+
+The `@agents/sdk` package provides a typed API client generated from the control-plane's OpenAPI spec.
 
 ## Development
 

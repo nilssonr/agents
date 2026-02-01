@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 
@@ -19,11 +20,17 @@ export interface RestServerDeps {
     logService: LogService;
     /** If provided, enables `/health` and `/ready` endpoints. */
     checkDb?: () => Promise<void>;
+    /** If provided, enables CORS with the given origin. */
+    corsOrigin?: string;
 }
 
 /** Creates a Fastify instance with all REST route groups registered. */
 export async function buildRestServer(deps: RestServerDeps): Promise<FastifyInstance> {
     const app = Fastify();
+
+    if (deps.corsOrigin) {
+        await app.register(cors, { origin: deps.corsOrigin });
+    }
 
     await app.register(swagger, {
         openapi: {

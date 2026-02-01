@@ -7,8 +7,8 @@
         "lint": "eslint .",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "test": "vitest run",
-        "dev": "pnpm --filter @agents/control-plane --filter @agents/worker --parallel dev",
+        "test": "vitest run && pnpm --filter @agents/web test",
+        "dev": "pnpm --filter @agents/control-plane --filter @agents/worker --filter @agents/web --parallel dev",
 "docker:up": "docker compose up -d",
         "docker:down": "docker compose down"
     },

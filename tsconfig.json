@@ -6,6 +6,7 @@
         { "path": "packages/libs/contracts" },
         { "path": "packages/libs/metrics" },
         { "path": "packages/apps/control-plane" },
-        { "path": "packages/apps/worker" }
+        { "path": "packages/apps/worker" },
+        { "path": "packages/libs/sdk" }
     ]
 }

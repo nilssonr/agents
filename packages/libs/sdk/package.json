@@ -1,0 +1,23 @@
+{
+    "name": "@agents/sdk",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "generate": "openapi-typescript openapi.json -o src/generated/api.d.ts",
+        "build": "tsc",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "openapi-fetch": "^0.13.0"
+    },
+    "devDependencies": {
+        "openapi-typescript": "^7.6.0"
+    }
+}
