@@ -3,10 +3,8 @@ import { z, type ZodTypeAny } from 'zod';
 /** A value that is either provided literally or resolved from flow context via a dot-path reference. */
 export type ValueSource<T> = { type: 'literal'; value: T } | { type: 'context'; ref: string };
 
-/**
- * Creates a Zod schema for a {@link ValueSource} whose literal branch validates against `innerSchema`.
- */
-export function valueSourceSchema<T extends ZodTypeAny>(
+/** Discriminated union schema for the explicit `{ type, value/ref }` form. */
+function valueSourceObjectSchema<T extends ZodTypeAny>(
     innerSchema: T,
 ): z.ZodDiscriminatedUnion<
     'type',
@@ -19,6 +17,23 @@ export function valueSourceSchema<T extends ZodTypeAny>(
         z.object({ type: z.literal('literal'), value: innerSchema }),
         z.object({ type: z.literal('context'), ref: z.string() }),
     ]);
+}
+
+/**
+ * Creates a Zod schema for a {@link ValueSource} whose literal branch validates against `innerSchema`.
+ *
+ * Accepts both the full `{ type, value/ref }` form and plain values as shorthand
+ * for `{ type: 'literal', value }`. For example, `"hello"` is equivalent to
+ * `{ type: "literal", value: "hello" }`.
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export function valueSourceSchema<T extends ZodTypeAny>(innerSchema: T) {
+    return z.preprocess((val) => {
+        if (val !== null && val !== undefined && typeof val === 'object' && 'type' in val) {
+            return val;
+        }
+        return { type: 'literal', value: val };
+    }, valueSourceObjectSchema(innerSchema));
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { WorkerServiceClient, JobAssignment } from '@agents/contracts';
 import { createLogger } from '@agents/logger';
+import { ZodError } from 'zod';
 
 import { createActivityLogger } from '../../features/activities/activity-logger.js';
 import type { ActivityRegistry } from '../../features/activities/activity-registry.js';
@@ -191,7 +192,11 @@ async function processAssignment(
         metrics?.activityDuration.observe({ type: assignment.activityType }, durationSec);
         const status = isTimeoutError(err) ? 'timeout' : 'failure';
         metrics?.activitiesTotal.inc({ type: assignment.activityType, status });
-        const errorMessage = err instanceof Error ? err.message : String(err);
+        const rawMessage =
+            err instanceof ZodError ? formatZodError(err) : err instanceof Error ? err.message : String(err);
+        const stepName = assignment.stepLabel || assignment.stepId || '';
+        const stepLabel = stepName ? ` (step '${stepName}')` : '';
+        const errorMessage = `Activity '${assignment.activityType}'${stepLabel} failed: ${rawMessage}`;
         await client.reportJobResult({
             jobId: assignment.jobId,
             agentId: assignment.agentId,
@@ -205,4 +210,17 @@ async function processAssignment(
         metrics?.jobDuration.observe({ agent_id: assignment.agentId }, jobDurationSec);
         metrics?.jobsTotal.inc({ agent_id: assignment.agentId, status: 'failure' });
     }
+}
+
+/** Formats a Zod validation error into a human-readable string. */
+function formatZodError(err: ZodError): string {
+    const issues = err.issues.map((issue) => {
+        // Strip internal ValueSource path segments (.value, .ref, .type)
+        const cleanPath = issue.path.filter((p) => p !== 'value' && p !== 'ref' && p !== 'type');
+        const path = cleanPath.length > 0 ? `'${cleanPath.join('.')}' ` : '';
+        return `${path}${issue.message}`;
+    });
+    // Deduplicate messages that collapse to the same path after cleanup
+    const unique = [...new Set(issues)];
+    return `Invalid params: ${unique.join('; ')}`;
 }

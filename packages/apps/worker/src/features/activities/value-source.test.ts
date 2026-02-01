@@ -1,6 +1,39 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
-import { resolveValue, type ValueSource } from './value-source.js';
+import { resolveValue, valueSourceSchema, type ValueSource } from './value-source.js';
+
+describe('valueSourceSchema', () => {
+    it('accepts explicit literal form', () => {
+        const schema = valueSourceSchema(z.string());
+        const result = schema.parse({ type: 'literal', value: 'hello' });
+        expect(result).toEqual({ type: 'literal', value: 'hello' });
+    });
+
+    it('accepts explicit context form', () => {
+        const schema = valueSourceSchema(z.string());
+        const result = schema.parse({ type: 'context', ref: 'foo.bar' });
+        expect(result).toEqual({ type: 'context', ref: 'foo.bar' });
+    });
+
+    it('coerces plain string to literal form', () => {
+        const schema = valueSourceSchema(z.string());
+        const result = schema.parse('hello');
+        expect(result).toEqual({ type: 'literal', value: 'hello' });
+    });
+
+    it('coerces plain number to literal form', () => {
+        const schema = valueSourceSchema(z.number());
+        const result = schema.parse(42);
+        expect(result).toEqual({ type: 'literal', value: 42 });
+    });
+
+    it('coerces plain object to literal form when no type field', () => {
+        const schema = valueSourceSchema(z.record(z.string()));
+        const result = schema.parse({ foo: 'bar' });
+        expect(result).toEqual({ type: 'literal', value: { foo: 'bar' } });
+    });
+});
 
 describe('resolveValue', () => {
     it('returns literal value directly', () => {
