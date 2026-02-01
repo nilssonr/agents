@@ -1,3 +1,4 @@
+-- migrate:up
 CREATE TABLE job_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
@@ -7,3 +8,6 @@ CREATE TABLE job_logs (
     metadata JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- migrate:down
+DROP TABLE job_logs;
