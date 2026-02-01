@@ -20,6 +20,11 @@ UPDATE agents SET failure_count = failure_count + 1, updated_at = now()
 WHERE id = $1
 RETURNING *;
 
+-- name: UpdateAgent :one
+UPDATE agents SET name = $2, activities = $3, failure_threshold = $4, editor_layout = $5, updated_at = now()
+WHERE id = $1
+RETURNING *;
+
 -- name: ResetAgent :exec
 UPDATE agents SET status = 'active', failure_count = 0, updated_at = now()
 WHERE id = $1;

@@ -107,6 +107,50 @@ describe('Agent routes', () => {
         expect(res.json()).toHaveLength(1);
     });
 
+    it('PATCH /agents/:id updates an agent', async () => {
+        const agent = await agentService.createAgent('a', [{ type: 'noop' }], 3);
+        const res = await app.inject({
+            method: 'PATCH',
+            url: `/agents/${agent.id}`,
+            payload: { name: 'updated', activities: [{ type: 'log' }], editor_layout: { nodes: [] } },
+        });
+        expect(res.statusCode).toBe(200);
+        const body: { name: string; activities: unknown; editor_layout: unknown } = res.json();
+        expect(body.name).toBe('updated');
+        expect(body.activities).toEqual([{ type: 'log' }]);
+        expect(body.editor_layout).toEqual({ nodes: [] });
+    });
+
+    it('PATCH /agents/:id returns 404 for missing agent', async () => {
+        const res = await app.inject({
+            method: 'PATCH',
+            url: '/agents/nonexistent',
+            payload: { name: 'x' },
+        });
+        expect(res.statusCode).toBe(404);
+    });
+
+    it('PATCH /agents/:id with empty body returns 400', async () => {
+        const agent = await agentService.createAgent('a', [], 3);
+        const res = await app.inject({
+            method: 'PATCH',
+            url: `/agents/${agent.id}`,
+            payload: {},
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('GET /activities returns activity definitions', async () => {
+        const res = await app.inject({ method: 'GET', url: '/activities' });
+        expect(res.statusCode).toBe(200);
+        const body: { type: string }[] = res.json();
+        expect(body.length).toBeGreaterThanOrEqual(3);
+        const types = body.map((a) => a.type);
+        expect(types).toContain('noop');
+        expect(types).toContain('http-request');
+        expect(types).toContain('log');
+    });
+
     it('POST /agents with empty body returns 400', async () => {
         const res = await app.inject({
             method: 'POST',

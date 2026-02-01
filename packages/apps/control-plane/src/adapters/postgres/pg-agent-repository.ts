@@ -1,10 +1,10 @@
 import type { Pool } from 'pg';
 
 import * as db from '../../db/agents_sql.js';
-import type { AgentRepository, AgentRow } from '../../features/agents/agent-repository.js';
+import type { AgentRepository, AgentRow, UpdateAgentFields } from '../../features/agents/agent-repository.js';
 
 function toAgentRow(
-    row: db.CreateAgentRow | db.GetAgentRow | db.ListAgentsRow | db.IncrementFailureCountRow,
+    row: db.CreateAgentRow | db.GetAgentRow | db.ListAgentsRow | db.IncrementFailureCountRow | db.UpdateAgentRow,
 ): AgentRow {
     return {
         id: row.id,
@@ -13,6 +13,7 @@ function toAgentRow(
         activities: row.activities,
         failure_threshold: row.failureThreshold,
         failure_count: row.failureCount,
+        editor_layout: row.editorLayout,
         created_at: row.createdAt,
         updated_at: row.updatedAt,
     };
@@ -39,6 +40,18 @@ export function createPgAgentRepository(pool: Pool): AgentRepository {
         async list(): Promise<AgentRow[]> {
             const rows = await db.listAgents(pool);
             return rows.map(toAgentRow);
+        },
+
+        async update(id, fields: UpdateAgentFields): Promise<AgentRow> {
+            const row = await db.updateAgent(pool, {
+                id,
+                name: fields.name,
+                activities: JSON.stringify(fields.activities),
+                failureThreshold: fields.failure_threshold,
+                editorLayout: fields.editor_layout ? JSON.stringify(fields.editor_layout) : null,
+            });
+            if (!row) throw new Error('Agent not found');
+            return toAgentRow(row);
         },
 
         async delete(id): Promise<void> {

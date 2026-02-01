@@ -6,6 +6,7 @@ import type { JobRepository, JobRow } from './job-repository.js';
 
 /** High-level operations on jobs: listing, claiming, completion, and failure reporting. */
 export interface JobService {
+    getJob(id: string): Promise<JobRow | null>;
     getJobsForAgent(agentId: string, status?: string): Promise<JobRow[]>;
     claimNextJob(agentId: string): Promise<JobRow | null>;
     completeJob(jobId: string, agentId: string, result: unknown): Promise<void>;
@@ -40,6 +41,10 @@ export function createJobService(
     maxContextSizeBytes: number = DEFAULT_MAX_CONTEXT_SIZE_BYTES,
 ): JobService {
     return {
+        async getJob(id): Promise<JobRow | null> {
+            return jobs.getById(id);
+        },
+
         async getJobsForAgent(agentId, status): Promise<JobRow[]> {
             return jobs.listByAgent(agentId, status);
         },

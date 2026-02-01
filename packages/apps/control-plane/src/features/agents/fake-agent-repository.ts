@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { randomUUID } from 'node:crypto';
 
-import type { AgentRepository, AgentRow } from './agent-repository.js';
+import type { AgentRepository, AgentRow, UpdateAgentFields } from './agent-repository.js';
 
 /**
  * In-memory {@link AgentRepository} for use in tests.
@@ -20,6 +20,7 @@ export function createFakeAgentRepository(): AgentRepository & { agents: AgentRo
                 activities,
                 failure_threshold: failureThreshold,
                 failure_count: 0,
+                editor_layout: null,
                 created_at: new Date(),
                 updated_at: new Date(),
             };
@@ -31,6 +32,16 @@ export function createFakeAgentRepository(): AgentRepository & { agents: AgentRo
         },
         async list(): Promise<AgentRow[]> {
             return [...agents];
+        },
+        async update(id, fields: UpdateAgentFields): Promise<AgentRow> {
+            const agent = agents.find((a) => a.id === id);
+            if (!agent) throw new Error('Agent not found');
+            agent.name = fields.name;
+            agent.activities = fields.activities;
+            agent.failure_threshold = fields.failure_threshold;
+            agent.editor_layout = fields.editor_layout;
+            agent.updated_at = new Date();
+            return agent;
         },
         async delete(id): Promise<void> {
             const idx = agents.findIndex((a) => a.id === id);

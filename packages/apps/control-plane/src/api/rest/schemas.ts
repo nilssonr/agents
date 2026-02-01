@@ -9,6 +9,7 @@ export const createAgentSchema = z.object({
             z.object({
                 type: z.string().min(1),
                 id: z.string().optional(),
+                label: z.string().optional(),
                 params: z.unknown().optional(),
                 maxRetries: z.number().int().nonnegative().optional(),
                 onError: z.record(z.string()).optional(),
@@ -18,6 +19,27 @@ export const createAgentSchema = z.object({
         .default([]),
     failure_threshold: z.number().int().positive().optional().default(3),
 });
+
+/** Schema for the PATCH /agents/:id request body. At least one field must be provided. */
+export const updateAgentSchema = z
+    .object({
+        name: z.string().min(1).optional(),
+        activities: z
+            .array(
+                z.object({
+                    type: z.string().min(1),
+                    id: z.string().optional(),
+                    label: z.string().optional(),
+                    params: z.unknown().optional(),
+                    maxRetries: z.number().int().nonnegative().optional(),
+                    onError: z.record(z.string()).optional(),
+                }),
+            )
+            .optional(),
+        failure_threshold: z.number().int().positive().optional(),
+        editor_layout: z.unknown().optional(),
+    })
+    .refine((body) => Object.keys(body).length > 0, { message: 'At least one field must be provided' });
 
 /** Schema for the POST /agents/:id/invoke request body. */
 export const invokeAgentSchema = z
@@ -39,6 +61,7 @@ export const agentSchema = z.object({
     activities: z.unknown(),
     failure_threshold: z.number(),
     failure_count: z.number(),
+    editor_layout: z.unknown().nullable(),
     created_at: z.string().datetime(),
     updated_at: z.string().datetime(),
 });

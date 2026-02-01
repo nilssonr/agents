@@ -34,6 +34,7 @@ export interface paths {
                             activities?: unknown;
                             failure_threshold: number;
                             failure_count: number;
+                            editor_layout?: unknown | null;
                             /** Format: date-time */
                             created_at: string;
                             /** Format: date-time */
@@ -85,6 +86,7 @@ export interface paths {
                             activities?: unknown;
                             failure_threshold: number;
                             failure_count: number;
+                            editor_layout?: unknown | null;
                             /** Format: date-time */
                             created_at: string;
                             /** Format: date-time */
@@ -147,6 +149,7 @@ export interface paths {
                             activities?: unknown;
                             failure_threshold: number;
                             failure_count: number;
+                            editor_layout?: unknown | null;
                             /** Format: date-time */
                             created_at: string;
                             /** Format: date-time */
@@ -196,7 +199,88 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        patch?: never;
+        /** @description Update an agent */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name?: string;
+                        activities?: {
+                            type: string;
+                            id?: string;
+                            params?: unknown;
+                            maxRetries?: number;
+                            onError?: {
+                                [key: string]: string;
+                            };
+                        }[];
+                        failure_threshold?: number;
+                        editor_layout?: unknown;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            name: string;
+                            status: string;
+                            activities?: unknown;
+                            failure_threshold: number;
+                            failure_count: number;
+                            editor_layout?: unknown | null;
+                            /** Format: date-time */
+                            created_at: string;
+                            /** Format: date-time */
+                            updated_at: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            type: string;
+                            title: string;
+                            status: number;
+                            detail: string;
+                            instance?: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            type: string;
+                            title: string;
+                            status: number;
+                            detail: string;
+                            instance?: string;
+                        };
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/agents/{id}/invoke": {
@@ -399,6 +483,115 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List available activity types with their parameter schemas */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            type?: string;
+                            description?: string;
+                            params?: Record<string, never>;
+                        }[];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get a job by ID */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            agent_id: string;
+                            status: string;
+                            payload?: unknown;
+                            result?: unknown;
+                            error: null | string;
+                            current_step_id: null | string;
+                            context: {
+                                [key: string]: unknown;
+                            };
+                            step_retries: number;
+                            /** Format: date-time */
+                            created_at: string;
+                            /** Format: date-time */
+                            updated_at: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            type: string;
+                            title: string;
+                            status: number;
+                            detail: string;
+                            instance?: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jobs/{id}/logs": {
         parameters: {
             query?: never;
@@ -524,98 +717,6 @@ export interface paths {
                 };
             };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Liveness probe */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {string} */
-                            status: "ok";
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ready": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Readiness probe (checks database connectivity) */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {string} */
-                            status: "ok";
-                        };
-                    };
-                };
-                /** @description Default Response */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            type: string;
-                            title: string;
-                            status: number;
-                            detail: string;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;

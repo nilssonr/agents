@@ -89,6 +89,14 @@
                                         "failure_count": {
                                             "type": "number"
                                         },
+                                        "editor_layout": {
+                                            "anyOf": [
+                                                {},
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ]
+                                        },
                                         "created_at": {
                                             "type": "string",
                                             "format": "date-time"
@@ -172,6 +180,14 @@
                                             "failure_count": {
                                                 "type": "number"
                                             },
+                                            "editor_layout": {
+                                                "anyOf": [
+                                                    {},
+                                                    {
+                                                        "type": "null"
+                                                    }
+                                                ]
+                                            },
                                             "created_at": {
                                                 "type": "string",
                                                 "format": "date-time"
@@ -236,6 +252,14 @@
                                         },
                                         "failure_count": {
                                             "type": "number"
+                                        },
+                                        "editor_layout": {
+                                            "anyOf": [
+                                                {},
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ]
                                         },
                                         "created_at": {
                                             "type": "string",
@@ -307,6 +331,183 @@
                 "responses": {
                     "204": {
                         "description": "Agent deleted"
+                    }
+                }
+            },
+            "patch": {
+                "tags": ["Agents"],
+                "description": "Update an agent",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "activities": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                },
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "params": {},
+                                                "maxRetries": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                "onError": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": ["type"],
+                                            "additionalProperties": false
+                                        }
+                                    },
+                                    "failure_threshold": {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0
+                                    },
+                                    "editor_layout": {}
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "path",
+                        "name": "id",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "activities": {},
+                                        "failure_threshold": {
+                                            "type": "number"
+                                        },
+                                        "failure_count": {
+                                            "type": "number"
+                                        },
+                                        "editor_layout": {
+                                            "anyOf": [
+                                                {},
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ]
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "name",
+                                        "status",
+                                        "failure_threshold",
+                                        "failure_count",
+                                        "created_at",
+                                        "updated_at"
+                                    ],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Default Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "title": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "number"
+                                        },
+                                        "detail": {
+                                            "type": "string"
+                                        },
+                                        "instance": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": ["type", "title", "status", "detail"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Default Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "title": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "number"
+                                        },
+                                        "detail": {
+                                            "type": "string"
+                                        },
+                                        "instance": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": ["type", "title", "status", "detail"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -594,6 +795,141 @@
                 }
             }
         },
+        "/activities": {
+            "get": {
+                "tags": ["Activities"],
+                "description": "List available activity types with their parameter schemas",
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": {
+                                                "type": "string"
+                                            },
+                                            "description": {
+                                                "type": "string"
+                                            },
+                                            "params": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/jobs/{id}": {
+            "get": {
+                "tags": ["Jobs"],
+                "description": "Get a job by ID",
+                "parameters": [
+                    {
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "path",
+                        "name": "id",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "agent_id": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "payload": {},
+                                        "result": {},
+                                        "error": {
+                                            "type": ["null", "string"]
+                                        },
+                                        "current_step_id": {
+                                            "type": ["null", "string"]
+                                        },
+                                        "context": {
+                                            "type": "object",
+                                            "additionalProperties": {}
+                                        },
+                                        "step_retries": {
+                                            "type": "number"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "agent_id",
+                                        "status",
+                                        "error",
+                                        "current_step_id",
+                                        "context",
+                                        "step_retries",
+                                        "created_at",
+                                        "updated_at"
+                                    ],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Default Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "title": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "number"
+                                        },
+                                        "detail": {
+                                            "type": "string"
+                                        },
+                                        "instance": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": ["type", "title", "status", "detail"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/jobs/{id}/logs": {
             "get": {
                 "tags": ["Jobs"],
@@ -780,84 +1116,6 @@
                     }
                 }
             }
-        },
-        "/health": {
-            "get": {
-                "tags": ["Health"],
-                "description": "Liveness probe",
-                "responses": {
-                    "200": {
-                        "description": "Default Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "status": {
-                                            "type": "string",
-                                            "enum": ["ok"]
-                                        }
-                                    },
-                                    "required": ["status"],
-                                    "additionalProperties": false
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/ready": {
-            "get": {
-                "tags": ["Health"],
-                "description": "Readiness probe (checks database connectivity)",
-                "responses": {
-                    "200": {
-                        "description": "Default Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "status": {
-                                            "type": "string",
-                                            "enum": ["ok"]
-                                        }
-                                    },
-                                    "required": ["status"],
-                                    "additionalProperties": false
-                                }
-                            }
-                        }
-                    },
-                    "503": {
-                        "description": "Default Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "type": {
-                                            "type": "string"
-                                        },
-                                        "title": {
-                                            "type": "string"
-                                        },
-                                        "status": {
-                                            "type": "number"
-                                        },
-                                        "detail": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": ["type", "title", "status", "detail"],
-                                    "additionalProperties": false
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     },
     "tags": [
@@ -872,6 +1130,10 @@
         {
             "name": "Webhooks",
             "description": "External trigger endpoints"
+        },
+        {
+            "name": "Activities",
+            "description": "Available activity types"
         },
         {
             "name": "Health",
