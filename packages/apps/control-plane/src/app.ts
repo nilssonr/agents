@@ -48,6 +48,7 @@ export async function createApp(): Promise<App> {
         jobReaperIntervalMs: { env: 'JOB_REAPER_INTERVAL_MS', default: '60000' },
         metricsPort: { env: 'METRICS_PORT', default: '9090' },
         maxContextSizeBytes: { env: 'MAX_CONTEXT_SIZE_BYTES', default: '1048576' },
+        corsOrigin: { env: 'CORS_ORIGIN', required: false },
     });
 
     // Infrastructure
@@ -89,6 +90,7 @@ export async function createApp(): Promise<App> {
         jobService,
         logService,
         checkDb: async () => { await pool.query('SELECT 1'); },
+        corsOrigin: config.corsOrigin,
     });
     const workerImpl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, logService, {
         pollIntervalMs: Number(config.grpcPollIntervalMs),

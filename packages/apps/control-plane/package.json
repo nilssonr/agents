@@ -6,7 +6,8 @@
     "scripts": {
         "build": "tsc",
         "dev": "tsx watch --conditions development src/index.ts",
-        "test": "vitest run"
+        "test": "vitest run",
+        "export-spec": "tsx scripts/export-spec.ts"
     },
     "dependencies": {
         "@agents/config": "workspace:*",
@@ -14,6 +15,7 @@
         "@agents/logger": "workspace:*",
         "@agents/metrics": "workspace:*",
         "@agents/migrations": "workspace:*",
+        "@fastify/cors": "^11.2.0",
         "@fastify/swagger": "^9.6.1",
         "@fastify/swagger-ui": "^5.2.5",
         "croner": "^9.1.0",
