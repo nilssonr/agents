@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { randomUUID } from 'node:crypto';
 
 import type { FlowContext } from '../flows/flow-types.js';
+
 import type { JobRepository, JobRow } from './job-repository.js';
 
 /**

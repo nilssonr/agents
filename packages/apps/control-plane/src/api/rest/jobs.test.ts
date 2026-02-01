@@ -1,9 +1,10 @@
-import { describe, expect, it, beforeEach } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { describe, expect, it, beforeEach } from 'vitest';
 
 import { createFakeLogRepository } from '../../features/logs/fake-log-repository.js';
 import { createLogService } from '../../features/logs/log-service.js';
 import type { LogService } from '../../features/logs/log-service.js';
+
 import { registerJobRoutes } from './jobs.js';
 
 describe('GET /jobs/:id/logs', () => {
@@ -27,7 +28,7 @@ describe('GET /jobs/:id/logs', () => {
         const response = await app.inject({ method: 'GET', url: '/jobs/job-1/logs' });
         expect(response.statusCode).toBe(200);
 
-        const body = response.json();
+        const body: Array<{ message: string; level: string }> = response.json();
         expect(body).toHaveLength(2);
         expect(body[0].message).toBe('started');
         expect(body[1].level).toBe('error');

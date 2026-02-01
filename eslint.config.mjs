@@ -6,7 +6,15 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig(
     {
-        ignores: ['**/dist/**', '**/generated/**', '**/db/**', '*.config.mjs', '**/vitest.config.ts', 'packages/apps/web/**'],
+        ignores: [
+            '**/dist/**',
+            '**/generated/**',
+            '**/db/**',
+            '*.config.mjs',
+            '**/vitest.config.ts',
+            'packages/apps/web/**',
+            '**/scripts/**',
+        ],
     },
     eslint.configs.recommended,
     tseslint.configs.strictTypeChecked,

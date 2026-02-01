@@ -73,9 +73,7 @@ describe('FlowService', () => {
                 { id: 'a', type: 'noop', onError: { TIMEOUT: 'b' } },
                 { id: 'b', type: 'fallback' },
             ];
-            const result = service.handleStepFailure(
-                activities, 'a', { message: 'timed out', type: 'TIMEOUT' }, 0, {},
-            );
+            const result = service.handleStepFailure(activities, 'a', { message: 'timed out', type: 'TIMEOUT' }, 0, {});
             expect(result.nextStepId).toBe('b');
             expect(result.retry).toBe(false);
         });
@@ -85,9 +83,7 @@ describe('FlowService', () => {
                 { id: 'a', type: 'noop', onError: { default: 'b' } },
                 { id: 'b', type: 'fallback' },
             ];
-            const result = service.handleStepFailure(
-                activities, 'a', { message: 'fail' }, 0, {},
-            );
+            const result = service.handleStepFailure(activities, 'a', { message: 'fail' }, 0, {});
             expect(result.nextStepId).toBe('b');
         });
 

@@ -8,17 +8,10 @@ describe('LogActivity', () => {
         const logger = createActivityLogger();
         const activity = createLogActivity();
 
-        const result = await activity(
-            { message: { type: 'literal', value: 'hello world' } },
-            null,
-            {},
-            logger,
-        );
+        const result = await activity({ message: { type: 'literal', value: 'hello world' } }, null, {}, logger);
 
         expect(result).toEqual({ logged: true });
-        expect(logger.entries()).toEqual([
-            { level: 'info', message: 'hello world', metadata: undefined },
-        ]);
+        expect(logger.entries()).toEqual([{ level: 'info', message: 'hello world', metadata: undefined }]);
     });
 
     it('logs at a specified level', async () => {
@@ -35,20 +28,17 @@ describe('LogActivity', () => {
             logger,
         );
 
-        expect(logger.entries()[0]!.level).toBe('error');
+        const entries = logger.entries();
+        expect(entries[0]?.level).toBe('error');
     });
 
     it('resolves message from context', async () => {
         const logger = createActivityLogger();
         const activity = createLogActivity();
 
-        await activity(
-            { message: { type: 'context', ref: 'msg' } },
-            null,
-            { msg: 'from context' },
-            logger,
-        );
+        await activity({ message: { type: 'context', ref: 'msg' } }, null, { msg: 'from context' }, logger);
 
-        expect(logger.entries()[0]!.message).toBe('from context');
+        const entries = logger.entries();
+        expect(entries[0]?.message).toBe('from context');
     });
 });

@@ -1,16 +1,17 @@
-import { describe, expect, it, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import { describe, expect, it, beforeEach } from 'vitest';
 
-import { buildRestServer } from './server.js';
 import { createAgentService } from '../../features/agents/agent-service.js';
-import { createJobService } from '../../features/jobs/job-service.js';
-import { createFlowService } from '../../features/flows/flow-service.js';
+import type { AgentService } from '../../features/agents/agent-service.js';
 import { createFakeAgentRepository } from '../../features/agents/fake-agent-repository.js';
+import { createFlowService } from '../../features/flows/flow-service.js';
 import { createFakeJobRepository } from '../../features/jobs/fake-job-repository.js';
+import { createJobService } from '../../features/jobs/job-service.js';
+import type { JobService } from '../../features/jobs/job-service.js';
 import { createFakeLogRepository } from '../../features/logs/fake-log-repository.js';
 import { createLogService } from '../../features/logs/log-service.js';
-import type { AgentService } from '../../features/agents/agent-service.js';
-import type { JobService } from '../../features/jobs/job-service.js';
+
+import { buildRestServer } from './server.js';
 
 describe('Webhook routes', () => {
     let app: FastifyInstance;
@@ -20,7 +21,12 @@ describe('Webhook routes', () => {
         const agentRepo = createFakeAgentRepository();
         const jobRepo = createFakeJobRepository();
         agentService = createAgentService(agentRepo, jobRepo);
-        const jobService: JobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, createFlowService());
+        const jobService: JobService = createJobService(
+            jobRepo,
+            agentRepo,
+            (agentId) => agentService.handleJobFailure(agentId),
+            createFlowService(),
+        );
         const logService = createLogService(createFakeLogRepository());
         app = await buildRestServer({ agentService, jobService, logService });
     });
@@ -33,7 +39,8 @@ describe('Webhook routes', () => {
             payload: { event: 'push', repo: 'test' },
         });
         expect(res.statusCode).toBe(202);
-        expect(res.json().payload).toEqual({ event: 'push', repo: 'test' });
+        const body: { payload: unknown } = res.json();
+        expect(body.payload).toEqual({ event: 'push', repo: 'test' });
     });
 
     it('POST /webhooks/:agentId returns 404 for unknown agent', async () => {

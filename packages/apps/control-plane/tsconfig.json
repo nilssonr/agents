@@ -7,5 +7,11 @@
         "verbatimModuleSyntax": false
     },
     "include": ["src"],
-    "references": [{ "path": "../../libs/logger" }, { "path": "../../libs/config" }, { "path": "../../libs/contracts" }, { "path": "../../libs/metrics" }, { "path": "../../libs/migrations" }]
+    "references": [
+        { "path": "../../libs/logger" },
+        { "path": "../../libs/config" },
+        { "path": "../../libs/contracts" },
+        { "path": "../../libs/metrics" },
+        { "path": "../../libs/migrations" }
+    ]
 }

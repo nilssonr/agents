@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import Fastify from 'fastify';
+import { describe, expect, it, vi } from 'vitest';
 
 import { registerHealthRoutes } from './health.js';
 
@@ -24,7 +24,7 @@ describe('Health routes', () => {
 
     it('GET /ready returns 503 when DB check fails', async () => {
         const app = Fastify();
-        const checkDb = vi.fn().mockRejectedValue(new Error('connection refused'));
+        const checkDb = vi.fn<() => Promise<void>>().mockRejectedValue(new Error('connection refused'));
         registerHealthRoutes(app, { checkDb });
 
         const res = await app.inject({ method: 'GET', url: '/ready' });

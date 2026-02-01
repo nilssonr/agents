@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 
 import { createFakeAgentRepository } from '../agents/fake-agent-repository.js';
 import { createFlowService } from '../flows/flow-service.js';
+
 import { createFakeJobRepository } from './fake-job-repository.js';
 import { createJobService } from './job-service.js';
 import type { JobService } from './job-service.js';
@@ -36,6 +37,7 @@ describe('JobService', () => {
         const agent = await agentRepo.create('a', [], 3);
         await jobRepo.create(agent.id, { n: 1 });
         const claimed = await service.claimNextJob(agent.id);
+        expect(claimed).not.toBeNull();
         expect(claimed?.status).toBe('running');
     });
 
@@ -79,9 +81,7 @@ describe('JobService', () => {
             const job = await jobRepo.create(agent.id, null);
             await jobRepo.claim(agent.id);
 
-            await service.processStepResult(
-                job.id, agent.id, 'a', true, { value: 42 }, undefined, agent.activities,
-            );
+            await service.processStepResult(job.id, agent.id, 'a', true, { value: 42 }, undefined, agent.activities);
 
             const updated = jobRepo.jobs.find((j) => j.id === job.id);
             expect(updated?.status).toBe('completed');
@@ -96,9 +96,7 @@ describe('JobService', () => {
             const job = await jobRepo.create(agent.id, null);
             await jobRepo.claim(agent.id);
 
-            await service.processStepResult(
-                job.id, agent.id, 'a', true, { next: 'b', data: 1 }, undefined, activities,
-            );
+            await service.processStepResult(job.id, agent.id, 'a', true, { next: 'b', data: 1 }, undefined, activities);
 
             const updated = jobRepo.jobs.find((j) => j.id === job.id);
             expect(updated?.status).toBe('pending');
@@ -112,11 +110,10 @@ describe('JobService', () => {
             const job = await jobRepo.create(agent.id, null);
             await jobRepo.claim(agent.id);
 
-            await service.processStepResult(
-                job.id, agent.id, 'a', false, undefined, 'fail', activities,
-            );
+            await service.processStepResult(job.id, agent.id, 'a', false, undefined, 'fail', activities);
 
             const updated = jobRepo.jobs.find((j) => j.id === job.id);
+            expect(updated).toBeDefined();
             expect(updated?.status).toBe('pending');
             expect(updated?.step_retries).toBe(1);
         });
@@ -130,9 +127,7 @@ describe('JobService', () => {
             const job = await jobRepo.create(agent.id, null);
             await jobRepo.claim(agent.id);
 
-            await service.processStepResult(
-                job.id, agent.id, 'a', false, undefined, 'fail', activities,
-            );
+            await service.processStepResult(job.id, agent.id, 'a', false, undefined, 'fail', activities);
 
             const updated = jobRepo.jobs.find((j) => j.id === job.id);
             expect(updated?.status).toBe('pending');
@@ -141,7 +136,14 @@ describe('JobService', () => {
 
         it('fails job when context exceeds max size', async () => {
             const smallLimit = 50; // 50 bytes
-            const limitedService = createJobService(jobRepo, agentRepo, onFailure, createFlowService(), undefined, smallLimit);
+            const limitedService = createJobService(
+                jobRepo,
+                agentRepo,
+                onFailure,
+                createFlowService(),
+                undefined,
+                smallLimit,
+            );
             const activities = [
                 { id: 'a', type: 'fetch' },
                 { id: 'b', type: 'transform' },
@@ -152,11 +154,10 @@ describe('JobService', () => {
 
             // Provide a large result that will push context over the limit
             const bigResult = { data: 'x'.repeat(100) };
-            await limitedService.processStepResult(
-                job.id, agent.id, 'a', true, bigResult, undefined, activities,
-            );
+            await limitedService.processStepResult(job.id, agent.id, 'a', true, bigResult, undefined, activities);
 
             const updated = jobRepo.jobs.find((j) => j.id === job.id);
+            expect(updated).toBeDefined();
             expect(updated?.status).toBe('failed');
             expect(updated?.error).toContain('Flow context exceeded maximum size');
             expect(onFailure).toHaveBeenCalledWith(agent.id);
@@ -171,9 +172,7 @@ describe('JobService', () => {
             const job = await jobRepo.create(agent.id, null);
             await jobRepo.claim(agent.id);
 
-            await service.processStepResult(
-                job.id, agent.id, 'a', true, { next: 'b', data: 1 }, undefined, activities,
-            );
+            await service.processStepResult(job.id, agent.id, 'a', true, { next: 'b', data: 1 }, undefined, activities);
 
             const updated = jobRepo.jobs.find((j) => j.id === job.id);
             expect(updated?.status).toBe('pending');
@@ -186,9 +185,7 @@ describe('JobService', () => {
             const job = await jobRepo.create(agent.id, null);
             await jobRepo.claim(agent.id);
 
-            await service.processStepResult(
-                job.id, agent.id, 'a', false, undefined, 'boom', activities,
-            );
+            await service.processStepResult(job.id, agent.id, 'a', false, undefined, 'boom', activities);
 
             const updated = jobRepo.jobs.find((j) => j.id === job.id);
             expect(updated?.status).toBe('failed');

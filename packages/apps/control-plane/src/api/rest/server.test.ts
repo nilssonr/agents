@@ -1,13 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 import { createAgentService } from '../../features/agents/agent-service.js';
 import { createFakeAgentRepository } from '../../features/agents/fake-agent-repository.js';
-import { createFakeJobRepository } from '../../features/jobs/fake-job-repository.js';
 import { createFlowService } from '../../features/flows/flow-service.js';
+import { createFakeJobRepository } from '../../features/jobs/fake-job-repository.js';
 import { createJobService } from '../../features/jobs/job-service.js';
 import { createFakeLogRepository } from '../../features/logs/fake-log-repository.js';
 import { createLogService } from '../../features/logs/log-service.js';
+
 import { buildRestServer } from './server.js';
 
 describe('buildRestServer', () => {
@@ -19,7 +20,12 @@ describe('buildRestServer', () => {
         const agentRepo = createFakeAgentRepository();
         const jobRepo = createFakeJobRepository();
         agentService = createAgentService(agentRepo, jobRepo);
-        jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, createFlowService());
+        jobService = createJobService(
+            jobRepo,
+            agentRepo,
+            (agentId) => agentService.handleJobFailure(agentId),
+            createFlowService(),
+        );
         logService = createLogService(createFakeLogRepository());
     });
 

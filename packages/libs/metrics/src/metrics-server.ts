@@ -35,7 +35,9 @@ export function createMetricsServer(registry: Registry, port: number): MetricsSe
                     }
                 });
                 server.on('error', reject);
-                server.listen(port, () => { resolve(); });
+                server.listen(port, () => {
+                    resolve();
+                });
             });
         },
         stop(): Promise<void> {

@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { createLogger } from '@agents/logger';
 
+import type { ActivityFn } from './activity-types.js';
 import { createHttpRequestActivity } from './http-request-activity.js';
 import { createLogActivity } from './log-activity.js';
-import type { ActivityFn } from './activity-types.js';
 
 export type { ActivityFn } from './activity-types.js';
 
@@ -39,7 +40,7 @@ export function createActivityRegistry(): ActivityRegistry {
         },
     };
 
-    registry.register('noop', async (_params, _payload, _context, _logger) => {
+    registry.register('noop', async (_params, _payload, _context, _logger): Promise<{ ok: boolean }> => {
         logger.info('noop activity executed');
         return { ok: true };
     });

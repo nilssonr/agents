@@ -26,7 +26,15 @@ function AgentListPage() {
 
     function handleCreate() {
         if (!name.trim()) return;
-        createAgent.mutate({ name: name.trim() }, { onSuccess: () => { setName(''); setOpen(false); } });
+        createAgent.mutate(
+            { name: name.trim() },
+            {
+                onSuccess: () => {
+                    setName('');
+                    setOpen(false);
+                },
+            },
+        );
     }
 
     if (isLoading) {
@@ -59,7 +67,11 @@ function AgentListPage() {
                                 onChange={(e) => setName(e.target.value)}
                                 data-testid="agent-name-input"
                             />
-                            <Button onClick={handleCreate} disabled={createAgent.isPending} data-testid="submit-create-agent">
+                            <Button
+                                onClick={handleCreate}
+                                disabled={createAgent.isPending}
+                                data-testid="submit-create-agent"
+                            >
                                 Create
                             </Button>
                         </div>

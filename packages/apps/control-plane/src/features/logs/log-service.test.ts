@@ -15,10 +15,10 @@ describe('LogService', () => {
 
         const logs = await service.getLogsForJob('job-1');
         expect(logs).toHaveLength(2);
-        expect(logs[0]!.level).toBe('info');
-        expect(logs[0]!.message).toBe('step started');
-        expect(logs[1]!.level).toBe('warn');
-        expect(logs[1]!.metadata).toEqual({ ms: 3000 });
+        expect(logs[0].level).toBe('info');
+        expect(logs[0].message).toBe('step started');
+        expect(logs[1].level).toBe('warn');
+        expect(logs[1].metadata).toEqual({ ms: 3000 });
     });
 
     it('returns empty array for unknown job', async () => {
@@ -41,11 +41,9 @@ describe('LogService', () => {
         const repo = createFakeLogRepository();
         const service = createLogService(repo);
 
-        await service.appendLogs('job-1', [
-            { step_id: 'fetch', level: 'info', message: 'fetching data' },
-        ]);
+        await service.appendLogs('job-1', [{ step_id: 'fetch', level: 'info', message: 'fetching data' }]);
 
         const logs = await service.getLogsForJob('job-1');
-        expect(logs[0]!.step_id).toBe('fetch');
+        expect(logs[0].step_id).toBe('fetch');
     });
 });

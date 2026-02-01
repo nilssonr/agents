@@ -13,9 +13,10 @@ describe('ActivityLogger', () => {
         const logger = createActivityLogger();
         logger.warn('slow', { ms: 500 });
         logger.error('failed', { code: 'ERR' });
-        expect(logger.entries()).toHaveLength(2);
-        expect(logger.entries()[0]!.level).toBe('warn');
-        expect(logger.entries()[1]!.level).toBe('error');
+        const entries = logger.entries();
+        expect(entries).toHaveLength(2);
+        expect(entries[0]?.level).toBe('warn');
+        expect(entries[1]?.level).toBe('error');
     });
 
     it('starts empty', () => {

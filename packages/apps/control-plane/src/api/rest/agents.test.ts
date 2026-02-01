@@ -1,16 +1,17 @@
-import { describe, expect, it, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import { describe, expect, it, beforeEach } from 'vitest';
 
-import { buildRestServer } from './server.js';
 import { createAgentService } from '../../features/agents/agent-service.js';
-import { createJobService } from '../../features/jobs/job-service.js';
-import { createFlowService } from '../../features/flows/flow-service.js';
+import type { AgentService } from '../../features/agents/agent-service.js';
 import { createFakeAgentRepository } from '../../features/agents/fake-agent-repository.js';
+import { createFlowService } from '../../features/flows/flow-service.js';
 import { createFakeJobRepository } from '../../features/jobs/fake-job-repository.js';
+import { createJobService } from '../../features/jobs/job-service.js';
+import type { JobService } from '../../features/jobs/job-service.js';
 import { createFakeLogRepository } from '../../features/logs/fake-log-repository.js';
 import { createLogService } from '../../features/logs/log-service.js';
-import type { AgentService } from '../../features/agents/agent-service.js';
-import type { JobService } from '../../features/jobs/job-service.js';
+
+import { buildRestServer } from './server.js';
 
 describe('Agent routes', () => {
     let app: FastifyInstance;
@@ -21,7 +22,12 @@ describe('Agent routes', () => {
         const agentRepo = createFakeAgentRepository();
         const jobRepo = createFakeJobRepository();
         agentService = createAgentService(agentRepo, jobRepo);
-        jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, createFlowService());
+        jobService = createJobService(
+            jobRepo,
+            agentRepo,
+            (agentId) => agentService.handleJobFailure(agentId),
+            createFlowService(),
+        );
         const logService = createLogService(createFakeLogRepository());
         app = await buildRestServer({ agentService, jobService, logService });
     });
@@ -33,7 +39,7 @@ describe('Agent routes', () => {
             payload: { name: 'test', activities: [{ type: 'noop' }], failure_threshold: 5 },
         });
         expect(res.statusCode).toBe(201);
-        const body = res.json();
+        const body: { name: string; status: string } = res.json();
         expect(body.name).toBe('test');
         expect(body.status).toBe('active');
     });
@@ -49,7 +55,8 @@ describe('Agent routes', () => {
         const agent = await agentService.createAgent('a', [], 3);
         const res = await app.inject({ method: 'GET', url: `/agents/${agent.id}` });
         expect(res.statusCode).toBe(200);
-        expect(res.json().id).toBe(agent.id);
+        const body: { id: string } = res.json();
+        expect(body.id).toBe(agent.id);
     });
 
     it('GET /agents/:id returns 404 for missing agent', async () => {
@@ -71,7 +78,8 @@ describe('Agent routes', () => {
             payload: { data: 'test' },
         });
         expect(res.statusCode).toBe(202);
-        expect(res.json().status).toBe('pending');
+        const body: { status: string } = res.json();
+        expect(body.status).toBe('pending');
     });
 
     it('POST /agents/:id/invoke returns 409 when paused', async () => {
@@ -106,7 +114,8 @@ describe('Agent routes', () => {
             payload: {},
         });
         expect(res.statusCode).toBe(400);
-        expect(res.json().detail).toContain('name');
+        const body: { detail: string } = res.json();
+        expect(body.detail).toContain('name');
     });
 
     it('POST /agents with empty name returns 400', async () => {
@@ -128,7 +137,7 @@ describe('Agent routes', () => {
         await app.ready();
         const res = await app.inject({ method: 'GET', url: '/docs/json' });
         expect(res.statusCode).toBe(200);
-        const spec = res.json();
+        const spec: { openapi: string; info: { title: string }; paths: unknown } = res.json();
         expect(spec.openapi).toBe('3.1.0');
         expect(spec.info.title).toBe('Agents Control Plane API');
         expect(spec.paths).toBeDefined();

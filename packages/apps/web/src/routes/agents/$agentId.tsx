@@ -46,7 +46,9 @@ function AgentDetailPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold" data-testid="agent-name">{agent.name}</h1>
+                    <h1 className="text-3xl font-bold" data-testid="agent-name">
+                        {agent.name}
+                    </h1>
                     <Badge variant={agent.status === 'active' ? 'default' : 'destructive'} data-testid="agent-status">
                         {agent.status}
                     </Badge>
@@ -105,7 +107,15 @@ function AgentDetailPage() {
                                             </a>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={job.status === 'completed' ? 'default' : job.status === 'failed' ? 'destructive' : 'secondary'}>
+                                            <Badge
+                                                variant={
+                                                    job.status === 'completed'
+                                                        ? 'default'
+                                                        : job.status === 'failed'
+                                                          ? 'destructive'
+                                                          : 'secondary'
+                                                }
+                                            >
                                                 {job.status}
                                             </Badge>
                                         </TableCell>

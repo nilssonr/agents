@@ -1,5 +1,6 @@
-import type { AgentRepository, AgentRow } from './agent-repository.js';
 import type { JobRepository, JobRow } from '../jobs/job-repository.js';
+
+import type { AgentRepository, AgentRow } from './agent-repository.js';
 
 /** High-level operations on agents: creation, invocation, failure handling, and restart. */
 export interface AgentService {

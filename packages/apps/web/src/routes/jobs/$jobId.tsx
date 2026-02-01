@@ -33,7 +33,10 @@ function JobDetailPage() {
                         <div className="space-y-2" data-testid="log-entries">
                             {logs.map((log, i) => (
                                 <div key={i} className="flex items-start gap-2 rounded border p-2 text-sm font-mono">
-                                    <Badge variant={log.level === 'error' ? 'destructive' : 'secondary'} className="shrink-0">
+                                    <Badge
+                                        variant={log.level === 'error' ? 'destructive' : 'secondary'}
+                                        className="shrink-0"
+                                    >
                                         {log.level}
                                     </Badge>
                                     <span className="text-muted-foreground">[{log.step_id}]</span>
@@ -42,7 +45,9 @@ function JobDetailPage() {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-muted-foreground" data-testid="no-logs">No logs available</p>
+                        <p className="text-muted-foreground" data-testid="no-logs">
+                            No logs available
+                        </p>
                     )}
                 </CardContent>
             </Card>

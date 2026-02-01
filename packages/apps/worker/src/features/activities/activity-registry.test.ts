@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { describe, expect, it } from 'vitest';
 
 import { createActivityLogger } from './activity-logger.js';
@@ -18,8 +19,10 @@ describe('ActivityRegistry', () => {
         const registry = createActivityRegistry();
         const noop = registry.get('noop');
         expect(noop).toBeDefined();
-        const result = await noop!({}, null, {}, createActivityLogger());
-        expect(result).toEqual({ ok: true });
+        if (noop) {
+            const result = await noop({}, null, {}, createActivityLogger());
+            expect(result).toEqual({ ok: true });
+        }
     });
 
     it('registers and retrieves a custom activity', () => {

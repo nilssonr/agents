@@ -26,8 +26,7 @@ export function createTransportStream(): Transform {
         transform(chunk: string, _encoding, callback): void {
             const obj = JSON.parse(chunk) as Record<string, unknown>;
             const time = typeof obj['time'] === 'number' ? obj['time'] : Date.now();
-            const level =
-                typeof obj['level'] === 'number' ? (LEVEL_LABELS[obj['level']] ?? 'UNKNOWN') : 'UNKNOWN';
+            const level = typeof obj['level'] === 'number' ? (LEVEL_LABELS[obj['level']] ?? 'UNKNOWN') : 'UNKNOWN';
             const msg = typeof obj['msg'] === 'string' ? obj['msg'] : '';
 
             const fields: Record<string, unknown> = {};

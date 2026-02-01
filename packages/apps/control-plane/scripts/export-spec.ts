@@ -21,8 +21,7 @@ async function main(): Promise<void> {
             info: {
                 title: 'Agents Control Plane API',
                 version: '1.0.0',
-                description:
-                    'REST API for managing agents, jobs, triggers, and webhooks.',
+                description: 'REST API for managing agents, jobs, triggers, and webhooks.',
             },
             tags: [
                 { name: 'Agents', description: 'Agent CRUD and lifecycle' },

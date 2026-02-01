@@ -17,10 +17,13 @@ describe('MetricsServer', () => {
         await server.start();
 
         const addr = server.address();
-        const res = await fetch(`http://127.0.0.1:${String(addr!.port)}/metrics`);
-        expect(res.status).toBe(200);
-        const body = await res.text();
-        expect(body).toContain('test_total');
+        expect(addr).not.toBeNull();
+        if (addr) {
+            const res = await fetch(`http://127.0.0.1:${String(addr.port)}/metrics`);
+            expect(res.status).toBe(200);
+            const body = await res.text();
+            expect(body).toContain('test_total');
+        }
     });
 
     it('returns 404 for other paths', async () => {
@@ -29,8 +32,11 @@ describe('MetricsServer', () => {
         await server.start();
 
         const addr = server.address();
-        const res = await fetch(`http://127.0.0.1:${String(addr!.port)}/other`);
-        expect(res.status).toBe(404);
+        expect(addr).not.toBeNull();
+        if (addr) {
+            const res = await fetch(`http://127.0.0.1:${String(addr.port)}/other`);
+            expect(res.status).toBe(404);
+        }
     });
 
     it('stops cleanly', async () => {

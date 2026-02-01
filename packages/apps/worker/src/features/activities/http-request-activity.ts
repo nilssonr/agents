@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { resolveValue, valueSourceSchema, type ValueSource } from './value-source.js';
-import type { ActivityFn } from './activity-types.js';
 import type { ActivityLogger } from './activity-logger.js';
+import type { ActivityFn } from './activity-types.js';
+import { resolveValue, valueSourceSchema, type ValueSource } from './value-source.js';
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'] as const;
 
@@ -36,18 +36,21 @@ export interface HttpActivityResult {
  * @param fetchFn - Optional fetch implementation for testability (defaults to global `fetch`).
  */
 export function createHttpRequestActivity(fetchFn: typeof fetch = fetch): ActivityFn {
-    return async (_params: unknown, _payload: unknown, context: unknown, _logger: ActivityLogger): Promise<HttpActivityResult> => {
+    return async (
+        _params: unknown,
+        _payload: unknown,
+        context: unknown,
+        _logger: ActivityLogger,
+    ): Promise<HttpActivityResult> => {
         const parsed = httpActivityParamsSchema.parse(_params);
 
         const method = resolveValue(parsed.method, context) as string;
-        const url = resolveValue(parsed.url, context) as string;
+        const url = resolveValue(parsed.url, context);
         const headers: Record<string, string> = parsed.headers
             ? resolveValue(parsed.headers as ValueSource<Record<string, string>>, context)
             : {};
         const rawBody = parsed.body ? resolveValue(parsed.body as ValueSource<unknown>, context) : undefined;
-        const timeout = parsed.timeout
-            ? resolveValue(parsed.timeout as ValueSource<number>, context)
-            : 30_000;
+        const timeout = parsed.timeout ? resolveValue(parsed.timeout as ValueSource<number>, context) : 30_000;
 
         let requestBody: string | undefined;
         if (rawBody !== undefined) {
@@ -57,12 +60,14 @@ export function createHttpRequestActivity(fetchFn: typeof fetch = fetch): Activi
                     headers['Content-Type'] = 'application/json';
                 }
             } else {
-                requestBody = String(rawBody);
+                requestBody = rawBody as string;
             }
         }
 
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeout);
+        const timer = setTimeout(() => {
+            controller.abort();
+        }, timeout);
 
         try {
             const init: RequestInit = { method, headers, signal: controller.signal };
@@ -77,9 +82,7 @@ export function createHttpRequestActivity(fetchFn: typeof fetch = fetch): Activi
             });
 
             const contentType = response.headers.get('content-type') ?? '';
-            const body = contentType.includes('application/json')
-                ? await response.json()
-                : await response.text();
+            const body = contentType.includes('application/json') ? await response.json() : await response.text();
 
             return { status: response.status, headers: responseHeaders, body };
         } finally {

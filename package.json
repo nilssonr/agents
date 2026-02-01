@@ -9,7 +9,7 @@
         "format:check": "prettier --check .",
         "test": "vitest run && pnpm --filter @agents/web test",
         "dev": "pnpm --filter @agents/control-plane --filter @agents/worker --filter @agents/web --parallel dev",
-"docker:up": "docker compose up -d",
+        "docker:up": "docker compose up -d",
         "docker:down": "docker compose down"
     },
     "pnpm": {

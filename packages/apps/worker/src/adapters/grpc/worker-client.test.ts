@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/require-await */
+import type { WorkerServiceClient, JobAssignment, JobResult, JobAck } from '@agents/contracts';
 import { describe, expect, it } from 'vitest';
 
-import type { WorkerServiceClient, JobAssignment, JobResult, JobAck } from '@agents/contracts';
-
 import { createActivityRegistry } from '../../features/activities/activity-registry.js';
+
 import { runWorker } from './worker-client.js';
 
 function createFakeClient(
@@ -20,7 +21,10 @@ function createFakeClient(
                     return {
                         async next(): Promise<IteratorResult<JobAssignment>> {
                             if (index < assignments.length) {
-                                return { value: assignments[index++]!, done: false };
+                                const value = assignments[index++];
+                                if (value) {
+                                    return { value, done: false };
+                                }
                             }
                             controller.abort();
                             return { value: undefined as unknown as JobAssignment, done: true };
@@ -40,45 +44,55 @@ describe('WorkerClient', () => {
     it('processes a job assignment using the activity registry', async () => {
         const registry = createActivityRegistry();
         const controller = new AbortController();
-        const client = createFakeClient([
-            {
-                jobId: 'j1',
-                agentId: 'a1',
-                activityType: 'noop',
-                paramsJson: '{}',
-                payloadJson: '{"data":"test"}',
-                stepId: 'step_0',
-                contextJson: '{}',
-            },
-        ], controller);
+        const client = createFakeClient(
+            [
+                {
+                    jobId: 'j1',
+                    agentId: 'a1',
+                    activityType: 'noop',
+                    paramsJson: '{}',
+                    payloadJson: '{"data":"test"}',
+                    stepId: 'step_0',
+                    contextJson: '{}',
+                },
+            ],
+            controller,
+        );
 
         await runWorker({ workerId: 'w1', client, registry }, controller.signal);
 
         expect(client.reported).toHaveLength(1);
-        expect(client.reported[0]!.success).toBe(true);
-        expect(client.reported[0]!.jobId).toBe('j1');
+        const firstReport = client.reported[0];
+        expect(firstReport).toBeDefined();
+        expect(firstReport?.success).toBe(true);
+        expect(firstReport?.jobId).toBe('j1');
     });
 
     it('reports failure for unknown activity type', async () => {
         const registry = createActivityRegistry();
         const controller = new AbortController();
-        const client = createFakeClient([
-            {
-                jobId: 'j2',
-                agentId: 'a1',
-                activityType: 'unknown-activity',
-                paramsJson: '{}',
-                payloadJson: '',
-                stepId: '',
-                contextJson: '{}',
-            },
-        ], controller);
+        const client = createFakeClient(
+            [
+                {
+                    jobId: 'j2',
+                    agentId: 'a1',
+                    activityType: 'unknown-activity',
+                    paramsJson: '{}',
+                    payloadJson: '',
+                    stepId: '',
+                    contextJson: '{}',
+                },
+            ],
+            controller,
+        );
 
         await runWorker({ workerId: 'w1', client, registry }, controller.signal);
 
         expect(client.reported).toHaveLength(1);
-        expect(client.reported[0]!.success).toBe(false);
-        expect(client.reported[0]!.error).toContain('Unknown activity type');
+        const firstReport = client.reported[0];
+        expect(firstReport).toBeDefined();
+        expect(firstReport?.success).toBe(false);
+        expect(firstReport?.error).toContain('Unknown activity type');
     });
 
     it('reports failure when activity throws', async () => {
@@ -88,23 +102,28 @@ describe('WorkerClient', () => {
             throw new Error('boom');
         });
 
-        const client = createFakeClient([
-            {
-                jobId: 'j3',
-                agentId: 'a1',
-                activityType: 'failing',
-                paramsJson: '{}',
-                payloadJson: '',
-                stepId: '',
-                contextJson: '{}',
-            },
-        ], controller);
+        const client = createFakeClient(
+            [
+                {
+                    jobId: 'j3',
+                    agentId: 'a1',
+                    activityType: 'failing',
+                    paramsJson: '{}',
+                    payloadJson: '',
+                    stepId: '',
+                    contextJson: '{}',
+                },
+            ],
+            controller,
+        );
 
         await runWorker({ workerId: 'w1', client, registry }, controller.signal);
 
         expect(client.reported).toHaveLength(1);
-        expect(client.reported[0]!.success).toBe(false);
-        expect(client.reported[0]!.error).toBe('boom');
+        const firstReport = client.reported[0];
+        expect(firstReport).toBeDefined();
+        expect(firstReport?.success).toBe(false);
+        expect(firstReport?.error).toBe('boom');
     });
 
     it('reports failure when activity exceeds timeout', async () => {
@@ -116,23 +135,28 @@ describe('WorkerClient', () => {
             });
         });
 
-        const client = createFakeClient([
-            {
-                jobId: 'j-timeout',
-                agentId: 'a1',
-                activityType: 'slow',
-                paramsJson: '{}',
-                payloadJson: '',
-                stepId: '',
-                contextJson: '{}',
-            },
-        ], controller);
+        const client = createFakeClient(
+            [
+                {
+                    jobId: 'j-timeout',
+                    agentId: 'a1',
+                    activityType: 'slow',
+                    paramsJson: '{}',
+                    payloadJson: '',
+                    stepId: '',
+                    contextJson: '{}',
+                },
+            ],
+            controller,
+        );
 
         await runWorker({ workerId: 'w1', client, registry, activityTimeoutMs: 50 }, controller.signal);
 
         expect(client.reported).toHaveLength(1);
-        expect(client.reported[0]!.success).toBe(false);
-        expect(client.reported[0]!.error).toContain('timed out');
+        const firstReport = client.reported[0];
+        expect(firstReport).toBeDefined();
+        expect(firstReport?.success).toBe(false);
+        expect(firstReport?.error).toContain('timed out');
     });
 
     it('completes in-flight activity before shutting down', async () => {
@@ -146,17 +170,20 @@ describe('WorkerClient', () => {
             return { done: true };
         });
 
-        const client = createFakeClient([
-            {
-                jobId: 'j-drain',
-                agentId: 'a1',
-                activityType: 'delayed',
-                paramsJson: '{}',
-                payloadJson: '',
-                stepId: '',
-                contextJson: '{}',
-            },
-        ], controller);
+        const client = createFakeClient(
+            [
+                {
+                    jobId: 'j-drain',
+                    agentId: 'a1',
+                    activityType: 'delayed',
+                    paramsJson: '{}',
+                    payloadJson: '',
+                    stepId: '',
+                    contextJson: '{}',
+                },
+            ],
+            controller,
+        );
 
         const workerPromise = runWorker({ workerId: 'w1', client, registry }, controller.signal);
 
@@ -168,7 +195,9 @@ describe('WorkerClient', () => {
 
         expect(activityResolved).toBe(true);
         expect(client.reported).toHaveLength(1);
-        expect(client.reported[0]!.success).toBe(true);
+        const firstReport = client.reported[0];
+        expect(firstReport).toBeDefined();
+        expect(firstReport?.success).toBe(true);
     });
 
     it('processes assignments concurrently with concurrency > 1', async () => {
@@ -185,11 +214,38 @@ describe('WorkerClient', () => {
             return { ok: true };
         });
 
-        const client = createFakeClient([
-            { jobId: 'c1', agentId: 'a1', activityType: 'concurrent', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
-            { jobId: 'c2', agentId: 'a1', activityType: 'concurrent', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
-            { jobId: 'c3', agentId: 'a1', activityType: 'concurrent', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
-        ], controller);
+        const client = createFakeClient(
+            [
+                {
+                    jobId: 'c1',
+                    agentId: 'a1',
+                    activityType: 'concurrent',
+                    paramsJson: '{}',
+                    payloadJson: '',
+                    stepId: '',
+                    contextJson: '{}',
+                },
+                {
+                    jobId: 'c2',
+                    agentId: 'a1',
+                    activityType: 'concurrent',
+                    paramsJson: '{}',
+                    payloadJson: '',
+                    stepId: '',
+                    contextJson: '{}',
+                },
+                {
+                    jobId: 'c3',
+                    agentId: 'a1',
+                    activityType: 'concurrent',
+                    paramsJson: '{}',
+                    payloadJson: '',
+                    stepId: '',
+                    contextJson: '{}',
+                },
+            ],
+            controller,
+        );
 
         await runWorker({ workerId: 'w1', client, registry, concurrency: 2 }, controller.signal);
 
@@ -211,10 +267,29 @@ describe('WorkerClient', () => {
             return { ok: true };
         });
 
-        const client = createFakeClient([
-            { jobId: 's1', agentId: 'a1', activityType: 'seq', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
-            { jobId: 's2', agentId: 'a1', activityType: 'seq', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
-        ], controller);
+        const client = createFakeClient(
+            [
+                {
+                    jobId: 's1',
+                    agentId: 'a1',
+                    activityType: 'seq',
+                    paramsJson: '{}',
+                    payloadJson: '',
+                    stepId: '',
+                    contextJson: '{}',
+                },
+                {
+                    jobId: 's2',
+                    agentId: 'a1',
+                    activityType: 'seq',
+                    paramsJson: '{}',
+                    payloadJson: '',
+                    stepId: '',
+                    contextJson: '{}',
+                },
+            ],
+            controller,
+        );
 
         await runWorker({ workerId: 'w1', client, registry, concurrency: 1 }, controller.signal);
 
@@ -279,6 +354,8 @@ describe('WorkerClient', () => {
 
         expect(callCount).toBe(2);
         expect(client.reported).toHaveLength(1);
-        expect(client.reported[0]!.jobId).toBe('j4');
+        const firstReport = client.reported[0];
+        expect(firstReport).toBeDefined();
+        expect(firstReport?.jobId).toBe('j4');
     });
 });

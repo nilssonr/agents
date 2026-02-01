@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { createAgentSchema, invokeAgentSchema, jobsQuerySchema, validateBody, agentSchema, jobSchema, logEntrySchema, problemDetailSchema, healthSchema, readyErrorSchema, toJsonSchema, createProblemDetail } from './schemas.js';
+import {
+    createAgentSchema,
+    invokeAgentSchema,
+    jobsQuerySchema,
+    validateBody,
+    agentSchema,
+    jobSchema,
+    logEntrySchema,
+    problemDetailSchema,
+    healthSchema,
+    readyErrorSchema,
+    toJsonSchema,
+    createProblemDetail,
+} from './schemas.js';
 
 describe('createAgentSchema', () => {
     it('rejects missing name', () => {
@@ -85,33 +98,54 @@ describe('validateBody', () => {
 describe('response schemas', () => {
     it('agentSchema validates a complete agent', () => {
         const result = agentSchema.safeParse({
-            id: '1', name: 'a', status: 'active', activities: [],
-            failure_threshold: 3, failure_count: 0,
-            created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
+            id: '1',
+            name: 'a',
+            status: 'active',
+            activities: [],
+            failure_threshold: 3,
+            failure_count: 0,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
         });
         expect(result.success).toBe(true);
     });
 
     it('jobSchema validates a complete job', () => {
         const result = jobSchema.safeParse({
-            id: '1', agent_id: '2', status: 'pending', payload: null,
-            result: null, error: null, current_step_id: null, context: {},
-            step_retries: 0, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
+            id: '1',
+            agent_id: '2',
+            status: 'pending',
+            payload: null,
+            result: null,
+            error: null,
+            current_step_id: null,
+            context: {},
+            step_retries: 0,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
         });
         expect(result.success).toBe(true);
     });
 
     it('logEntrySchema validates a log entry', () => {
         const result = logEntrySchema.safeParse({
-            id: '1', job_id: '2', step_id: null, level: 'info',
-            message: 'hello', metadata: {}, created_at: '2024-01-01T00:00:00Z',
+            id: '1',
+            job_id: '2',
+            step_id: null,
+            level: 'info',
+            message: 'hello',
+            metadata: {},
+            created_at: '2024-01-01T00:00:00Z',
         });
         expect(result.success).toBe(true);
     });
 
     it('problemDetailSchema validates RFC 7807', () => {
         const result = problemDetailSchema.safeParse({
-            type: 'about:blank', title: 'Not Found', status: 404, detail: 'missing',
+            type: 'about:blank',
+            title: 'Not Found',
+            status: 404,
+            detail: 'missing',
         });
         expect(result.success).toBe(true);
     });
@@ -123,7 +157,10 @@ describe('response schemas', () => {
 
     it('readyErrorSchema validates error shape', () => {
         const result = readyErrorSchema.safeParse({
-            type: 'about:blank', title: 'Service Unavailable', status: 503, detail: 'db down',
+            type: 'about:blank',
+            title: 'Service Unavailable',
+            status: 503,
+            detail: 'db down',
         });
         expect(result.success).toBe(true);
     });

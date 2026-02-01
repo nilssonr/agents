@@ -3,7 +3,21 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createTestWrapper } from '../test-utils';
 
-const jobs = [{ id: 'j1', agent_id: 'a1', status: 'completed', payload: {}, result: null, error: null, current_step_id: null, context: {}, step_retries: 0, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' }];
+const jobs = [
+    {
+        id: 'j1',
+        agent_id: 'a1',
+        status: 'completed',
+        payload: {},
+        result: null,
+        error: null,
+        current_step_id: null,
+        context: {},
+        step_retries: 0,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+    },
+];
 const logs = [{ id: 'l1', job_id: 'j1', step_id: 'step-1', level: 'info', message: 'hello', metadata: {} }];
 
 vi.mock('@/api-client', () => ({
