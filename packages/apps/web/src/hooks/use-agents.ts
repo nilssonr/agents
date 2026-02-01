@@ -63,6 +63,23 @@ export function useInvokeAgent() {
     });
 }
 
+export function useUpdateAgent() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, body }: { id: string; body: Record<string, unknown> }) => {
+            const { data } = await apiClient.PATCH('/agents/{id}', {
+                params: { path: { id } },
+                body,
+            });
+            return data;
+        },
+        onSuccess: (_data, variables) => {
+            void qc.invalidateQueries({ queryKey: ['agents'] });
+            void qc.invalidateQueries({ queryKey: ['agents', variables.id] });
+        },
+    });
+}
+
 export function useRestartAgent() {
     const qc = useQueryClient();
     return useMutation({
