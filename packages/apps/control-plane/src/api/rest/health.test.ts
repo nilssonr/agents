@@ -29,6 +29,11 @@ describe('Health routes', () => {
 
         const res = await app.inject({ method: 'GET', url: '/ready' });
         expect(res.statusCode).toBe(503);
-        expect(res.json()).toEqual({ status: 'unavailable', error: 'connection refused' });
+        expect(res.json()).toEqual({
+            type: 'about:blank',
+            title: 'Service Unavailable',
+            status: 503,
+            detail: 'connection refused',
+        });
     });
 });

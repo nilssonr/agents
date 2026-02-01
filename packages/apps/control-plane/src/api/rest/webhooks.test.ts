@@ -16,13 +16,13 @@ describe('Webhook routes', () => {
     let app: FastifyInstance;
     let agentService: AgentService;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         const agentRepo = createFakeAgentRepository();
         const jobRepo = createFakeJobRepository();
         agentService = createAgentService(agentRepo, jobRepo);
         const jobService: JobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, createFlowService());
         const logService = createLogService(createFakeLogRepository());
-        app = buildRestServer({ agentService, jobService, logService });
+        app = await buildRestServer({ agentService, jobService, logService });
     });
 
     it('POST /webhooks/:agentId returns 202 and stores payload', async () => {

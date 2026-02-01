@@ -32,7 +32,7 @@ export interface App {
  * domain services, cron scheduler, REST API, and gRPC server — and returns
  * an {@link App} handle to start and shut everything down.
  */
-export function createApp(): App {
+export async function createApp(): Promise<App> {
     // Config
     const config = loadConfig({
         httpPort: { env: 'HTTP_PORT' },
@@ -84,7 +84,7 @@ export function createApp(): App {
     );
 
     // API
-    const rest = buildRestServer({
+    const rest = await buildRestServer({
         agentService,
         jobService,
         logService,

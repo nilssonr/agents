@@ -137,6 +137,13 @@ Schema lives in `control-plane/sql/schema.sql`. Migrations in `control-plane/sql
 - `GET /health` — Liveness probe → 200
 - `GET /ready` — Readiness probe (DB ping) → 200 or 503
 
+### OpenAPI / Swagger UI
+
+- `GET /docs` — Swagger UI interactive documentation
+- `GET /docs/json` — OpenAPI 3.1 JSON specification
+
+All routes include JSON Schema definitions for request/response bodies. Error responses follow RFC 7807 Problem Details format (`application/problem+json`).
+
 ### Metrics
 
 Both apps serve Prometheus metrics on a dedicated `METRICS_PORT` (default 9090) via `@agents/metrics`, separate from REST/gRPC ports.
@@ -221,4 +228,4 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 
 ## Verification
 
-Always run `pnpm build && pnpm test` after changes. Currently 154 tests across 27 test files.
+Always run `pnpm build && pnpm test` after changes. Currently 157 tests across 27 test files.
