@@ -54,6 +54,7 @@ describe('WorkerClient', () => {
                     payloadJson: '{"data":"test"}',
                     stepId: 'step_0',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
             ],
             controller,
@@ -81,6 +82,7 @@ describe('WorkerClient', () => {
                     payloadJson: '',
                     stepId: '',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
             ],
             controller,
@@ -112,6 +114,7 @@ describe('WorkerClient', () => {
                     payloadJson: '',
                     stepId: '',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
             ],
             controller,
@@ -123,7 +126,7 @@ describe('WorkerClient', () => {
         const firstReport = client.reported[0];
         expect(firstReport).toBeDefined();
         expect(firstReport?.success).toBe(false);
-        expect(firstReport?.error).toBe('boom');
+        expect(firstReport?.error).toContain("Activity 'failing' failed: boom");
     });
 
     it('reports failure when activity exceeds timeout', async () => {
@@ -145,6 +148,7 @@ describe('WorkerClient', () => {
                     payloadJson: '',
                     stepId: '',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
             ],
             controller,
@@ -180,6 +184,7 @@ describe('WorkerClient', () => {
                     payloadJson: '',
                     stepId: '',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
             ],
             controller,
@@ -224,6 +229,7 @@ describe('WorkerClient', () => {
                     payloadJson: '',
                     stepId: '',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
                 {
                     jobId: 'c2',
@@ -233,6 +239,7 @@ describe('WorkerClient', () => {
                     payloadJson: '',
                     stepId: '',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
                 {
                     jobId: 'c3',
@@ -242,6 +249,7 @@ describe('WorkerClient', () => {
                     payloadJson: '',
                     stepId: '',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
             ],
             controller,
@@ -277,6 +285,7 @@ describe('WorkerClient', () => {
                     payloadJson: '',
                     stepId: '',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
                 {
                     jobId: 's2',
@@ -286,6 +295,7 @@ describe('WorkerClient', () => {
                     payloadJson: '',
                     stepId: '',
                     contextJson: '{}',
+                    stepLabel: '',
                 },
             ],
             controller,
@@ -333,6 +343,7 @@ describe('WorkerClient', () => {
                                             payloadJson: '',
                                             stepId: '',
                                             contextJson: '{}',
+                                            stepLabel: '',
                                         },
                                         done: false,
                                     };
