@@ -25,4 +25,5 @@ export interface JobRepository {
     getById(id: string): Promise<JobRow | null>;
     updateStep(id: string, stepId: string, context: FlowContext): Promise<void>;
     incrementStepRetries(id: string): Promise<JobRow | null>;
+    findStaleRunningJobs(olderThan: Date): Promise<JobRow[]>;
 }

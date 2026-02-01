@@ -26,7 +26,6 @@ export function createCronScheduler(
     intervalMs: number,
 ): CronScheduler {
     let timer: ReturnType<typeof setInterval> | null = null;
-    const lastFired = new Map<string, number>();
 
     async function tick(): Promise<void> {
         try {
@@ -41,10 +40,10 @@ export function createCronScheduler(
                 if (!next) continue;
 
                 const nextMs = next.getTime();
-                const last = lastFired.get(trigger.id) ?? 0;
+                const last = trigger.last_fired_at?.getTime() ?? 0;
 
                 if (nextMs <= now + intervalMs && nextMs > last) {
-                    lastFired.set(trigger.id, now);
+                    await triggerRepo.updateLastFiredAt(trigger.id, new Date(now));
                     logger.info({ agentId: trigger.agent_id, cron: trigger.cron_expression }, 'cron trigger fired');
                     await agentService.invokeAgent(trigger.agent_id, {
                         trigger: 'cron',

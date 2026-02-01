@@ -17,6 +17,7 @@ export function createFakeTriggerRepository(): TriggerRepository & { triggers: T
                 agent_id: agentId,
                 kind,
                 cron_expression: cronExpression,
+                last_fired_at: null,
                 created_at: new Date(),
             };
             triggers.push(trigger);
@@ -33,6 +34,10 @@ export function createFakeTriggerRepository(): TriggerRepository & { triggers: T
         async delete(id): Promise<void> {
             const idx = triggers.findIndex((t) => t.id === id);
             if (idx !== -1) triggers.splice(idx, 1);
+        },
+        async updateLastFiredAt(id, firedAt): Promise<void> {
+            const trigger = triggers.find((t) => t.id === id);
+            if (trigger) trigger.last_fired_at = firedAt;
         },
     };
 }

@@ -107,6 +107,70 @@ describe('WorkerClient', () => {
         expect(client.reported[0]!.error).toBe('boom');
     });
 
+    it('reports failure when activity exceeds timeout', async () => {
+        const registry = createActivityRegistry();
+        const controller = new AbortController();
+        registry.register('slow', async () => {
+            return new Promise(() => {
+                // never resolves
+            });
+        });
+
+        const client = createFakeClient([
+            {
+                jobId: 'j-timeout',
+                agentId: 'a1',
+                activityType: 'slow',
+                paramsJson: '{}',
+                payloadJson: '',
+                stepId: '',
+                contextJson: '{}',
+            },
+        ], controller);
+
+        await runWorker({ workerId: 'w1', client, registry, activityTimeoutMs: 50 }, controller.signal);
+
+        expect(client.reported).toHaveLength(1);
+        expect(client.reported[0]!.success).toBe(false);
+        expect(client.reported[0]!.error).toContain('timed out');
+    });
+
+    it('completes in-flight activity before shutting down', async () => {
+        const registry = createActivityRegistry();
+        const controller = new AbortController();
+        let activityResolved = false;
+
+        registry.register('delayed', async () => {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            activityResolved = true;
+            return { done: true };
+        });
+
+        const client = createFakeClient([
+            {
+                jobId: 'j-drain',
+                agentId: 'a1',
+                activityType: 'delayed',
+                paramsJson: '{}',
+                payloadJson: '',
+                stepId: '',
+                contextJson: '{}',
+            },
+        ], controller);
+
+        const workerPromise = runWorker({ workerId: 'w1', client, registry }, controller.signal);
+
+        // Give time for the activity to start, then abort
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        controller.abort();
+
+        await workerPromise;
+
+        expect(activityResolved).toBe(true);
+        expect(client.reported).toHaveLength(1);
+        expect(client.reported[0]!.success).toBe(true);
+    });
+
     it('reconnects after a connection error', async () => {
         const registry = createActivityRegistry();
         const controller = new AbortController();

@@ -14,9 +14,9 @@ app.start().catch((err: unknown) => {
 
 process.on('SIGINT', () => {
     logger.info('worker shutting down');
-    app.shutdown();
+    void app.shutdown().then(() => process.exit(0));
 });
 process.on('SIGTERM', () => {
     logger.info('worker shutting down');
-    app.shutdown();
+    void app.shutdown().then(() => process.exit(0));
 });
