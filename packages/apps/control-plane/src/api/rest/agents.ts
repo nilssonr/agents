@@ -5,6 +5,7 @@ import type { JobService } from '../../features/jobs/job-service.js';
 
 import {
     createAgentSchema,
+    updateAgentSchema,
     invokeAgentSchema,
     jobsQuerySchema,
     validateBody,
@@ -99,6 +100,38 @@ export function registerAgentRoutes(
             const { id } = request.params as { id: string };
             await deps.agentService.deleteAgent(id);
             return reply.status(204).send();
+        },
+    );
+
+    app.patch(
+        '/agents/:id',
+        {
+            schema: {
+                tags: ['Agents'],
+                description: 'Update an agent',
+                params: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+                body: toJsonSchema(updateAgentSchema),
+                response: {
+                    200: toJsonSchema(agentSchema),
+                    404: toJsonSchema(problemDetailSchema),
+                    400: toJsonSchema(problemDetailSchema),
+                },
+            },
+        },
+        async (request, reply) => {
+            const { id } = request.params as { id: string };
+            const body = validateBody(updateAgentSchema, request.body);
+            const existing = await deps.agentService.getAgent(id);
+            if (!existing) {
+                return reply.status(404).send(createProblemDetail(404, 'Not Found', 'Agent not found'));
+            }
+            const updated = await deps.agentService.updateAgent(id, {
+                name: body.name ?? existing.name,
+                activities: body.activities ?? existing.activities,
+                failure_threshold: body.failure_threshold ?? existing.failure_threshold,
+                editor_layout: body.editor_layout !== undefined ? body.editor_layout : existing.editor_layout,
+            });
+            return reply.status(200).send(updated);
         },
     );
 

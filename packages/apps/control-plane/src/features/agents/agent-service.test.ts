@@ -72,6 +72,31 @@ describe('AgentService', () => {
         expect(restarted?.failure_count).toBe(0);
     });
 
+    it('updates an agent', async () => {
+        const agent = await service.createAgent('a', [{ type: 'noop' }], 3);
+        const updated = await service.updateAgent(agent.id, {
+            name: 'b',
+            activities: [{ type: 'log' }],
+            failure_threshold: 5,
+            editor_layout: { nodes: [] },
+        });
+        expect(updated.name).toBe('b');
+        expect(updated.activities).toEqual([{ type: 'log' }]);
+        expect(updated.failure_threshold).toBe(5);
+        expect(updated.editor_layout).toEqual({ nodes: [] });
+    });
+
+    it('throws AgentNotFoundError when updating nonexistent agent', async () => {
+        await expect(
+            service.updateAgent('nonexistent', {
+                name: 'x',
+                activities: [],
+                failure_threshold: 3,
+                editor_layout: null,
+            }),
+        ).rejects.toThrow(AgentNotFoundError);
+    });
+
     it('pauses agent when failure count reaches threshold', async () => {
         const agent = await service.createAgent('a', [], 2);
         await service.handleJobFailure(agent.id);

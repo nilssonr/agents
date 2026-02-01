@@ -7,7 +7,7 @@ interface Client {
 export const createAgentQuery = `-- name: CreateAgent :one
 INSERT INTO agents (name, activities, failure_threshold)
 VALUES ($1, $2, $3)
-RETURNING id, name, status, activities, failure_threshold, failure_count, created_at, updated_at`;
+RETURNING id, name, status, activities, failure_threshold, failure_count, editor_layout, created_at, updated_at`;
 
 export interface CreateAgentArgs {
     name: string;
@@ -22,6 +22,7 @@ export interface CreateAgentRow {
     activities: any;
     failureThreshold: number;
     failureCount: number;
+    editorLayout: any;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -43,13 +44,14 @@ export async function createAgent(client: Client, args: CreateAgentArgs): Promis
         activities: row[3],
         failureThreshold: row[4],
         failureCount: row[5],
-        createdAt: row[6],
-        updatedAt: row[7]
+        editorLayout: row[6],
+        createdAt: row[7],
+        updatedAt: row[8]
     };
 }
 
 export const getAgentQuery = `-- name: GetAgent :one
-SELECT id, name, status, activities, failure_threshold, failure_count, created_at, updated_at FROM agents WHERE id = $1`;
+SELECT id, name, status, activities, failure_threshold, failure_count, editor_layout, created_at, updated_at FROM agents WHERE id = $1`;
 
 export interface GetAgentArgs {
     id: string;
@@ -62,6 +64,7 @@ export interface GetAgentRow {
     activities: any;
     failureThreshold: number;
     failureCount: number;
+    editorLayout: any;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -83,13 +86,14 @@ export async function getAgent(client: Client, args: GetAgentArgs): Promise<GetA
         activities: row[3],
         failureThreshold: row[4],
         failureCount: row[5],
-        createdAt: row[6],
-        updatedAt: row[7]
+        editorLayout: row[6],
+        createdAt: row[7],
+        updatedAt: row[8]
     };
 }
 
 export const listAgentsQuery = `-- name: ListAgents :many
-SELECT id, name, status, activities, failure_threshold, failure_count, created_at, updated_at FROM agents ORDER BY created_at DESC`;
+SELECT id, name, status, activities, failure_threshold, failure_count, editor_layout, created_at, updated_at FROM agents ORDER BY created_at DESC`;
 
 export interface ListAgentsRow {
     id: string;
@@ -98,6 +102,7 @@ export interface ListAgentsRow {
     activities: any;
     failureThreshold: number;
     failureCount: number;
+    editorLayout: any;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -116,8 +121,9 @@ export async function listAgents(client: Client): Promise<ListAgentsRow[]> {
             activities: row[3],
             failureThreshold: row[4],
             failureCount: row[5],
-            createdAt: row[6],
-            updatedAt: row[7]
+            editorLayout: row[6],
+            createdAt: row[7],
+            updatedAt: row[8]
         };
     });
 }
@@ -153,10 +159,58 @@ export async function updateAgentStatus(client: Client, args: UpdateAgentStatusA
     });
 }
 
+export const updateAgentQuery = `-- name: UpdateAgent :one
+UPDATE agents SET name = $2, activities = $3, failure_threshold = $4, editor_layout = $5, updated_at = now()
+WHERE id = $1
+RETURNING id, name, status, activities, failure_threshold, failure_count, editor_layout, created_at, updated_at`;
+
+export interface UpdateAgentArgs {
+    id: string;
+    name: string;
+    activities: any;
+    failureThreshold: number;
+    editorLayout: any;
+}
+
+export interface UpdateAgentRow {
+    id: string;
+    name: string;
+    status: string;
+    activities: any;
+    failureThreshold: number;
+    failureCount: number;
+    editorLayout: any;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export async function updateAgent(client: Client, args: UpdateAgentArgs): Promise<UpdateAgentRow | null> {
+    const result = await client.query({
+        text: updateAgentQuery,
+        values: [args.id, args.name, args.activities, args.failureThreshold, args.editorLayout],
+        rowMode: "array"
+    });
+    if (result.rows.length !== 1) {
+        return null;
+    }
+    const row = result.rows[0];
+    return {
+        id: row[0],
+        name: row[1],
+        status: row[2],
+        activities: row[3],
+        failureThreshold: row[4],
+        failureCount: row[5],
+        editorLayout: row[6],
+        createdAt: row[7],
+        updatedAt: row[8]
+    };
+}
+
 export const incrementFailureCountQuery = `-- name: IncrementFailureCount :one
 UPDATE agents SET failure_count = failure_count + 1, updated_at = now()
 WHERE id = $1
-RETURNING id, name, status, activities, failure_threshold, failure_count, created_at, updated_at`;
+RETURNING id, name, status, activities, failure_threshold, failure_count, editor_layout, created_at, updated_at`;
 
 export interface IncrementFailureCountArgs {
     id: string;
@@ -169,6 +223,7 @@ export interface IncrementFailureCountRow {
     activities: any;
     failureThreshold: number;
     failureCount: number;
+    editorLayout: any;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -190,8 +245,9 @@ export async function incrementFailureCount(client: Client, args: IncrementFailu
         activities: row[3],
         failureThreshold: row[4],
         failureCount: row[5],
-        createdAt: row[6],
-        updatedAt: row[7]
+        editorLayout: row[6],
+        createdAt: row[7],
+        updatedAt: row[8]
     };
 }
 
@@ -210,4 +266,3 @@ export async function resetAgent(client: Client, args: ResetAgentArgs): Promise<
         rowMode: "array"
     });
 }
-

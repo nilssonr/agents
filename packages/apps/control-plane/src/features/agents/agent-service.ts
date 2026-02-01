@@ -1,6 +1,6 @@
 import type { JobRepository, JobRow } from '../jobs/job-repository.js';
 
-import type { AgentRepository, AgentRow } from './agent-repository.js';
+import type { AgentRepository, AgentRow, UpdateAgentFields } from './agent-repository.js';
 
 /** High-level operations on agents: creation, invocation, failure handling, and restart. */
 export interface AgentService {
@@ -8,6 +8,7 @@ export interface AgentService {
     getAgent(id: string): Promise<AgentRow | null>;
     listAgents(): Promise<AgentRow[]>;
     deleteAgent(id: string): Promise<void>;
+    updateAgent(id: string, fields: UpdateAgentFields): Promise<AgentRow>;
     invokeAgent(id: string, payload: unknown): Promise<JobRow>;
     restartAgent(id: string): Promise<void>;
     handleJobFailure(agentId: string): Promise<void>;
@@ -36,6 +37,14 @@ export function createAgentService(agents: AgentRepository, jobs: JobRepository)
 
         async deleteAgent(id): Promise<void> {
             return agents.delete(id);
+        },
+
+        async updateAgent(id, fields): Promise<AgentRow> {
+            const agent = await agents.get(id);
+            if (!agent) {
+                throw new AgentNotFoundError(id);
+            }
+            return agents.update(id, fields);
         },
 
         async invokeAgent(id, payload): Promise<JobRow> {

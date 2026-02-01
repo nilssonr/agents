@@ -5,6 +5,7 @@ CREATE TABLE agents (
     activities JSONB NOT NULL DEFAULT '[]',
     failure_threshold INTEGER NOT NULL DEFAULT 3,
     failure_count INTEGER NOT NULL DEFAULT 0,
+    editor_layout JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
