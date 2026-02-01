@@ -47,6 +47,7 @@ export function createApp(): App {
         jobReaperTtlMs: { env: 'JOB_REAPER_TTL_MS', default: '300000' },
         jobReaperIntervalMs: { env: 'JOB_REAPER_INTERVAL_MS', default: '60000' },
         metricsPort: { env: 'METRICS_PORT', default: '9090' },
+        maxContextSizeBytes: { env: 'MAX_CONTEXT_SIZE_BYTES', default: '1048576' },
     });
 
     // Infrastructure
@@ -71,7 +72,7 @@ export function createApp(): App {
     // Features
     const flowService = createFlowService();
     const agentService = createAgentService(agentRepo, jobRepo);
-    const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService, metrics);
+    const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService, metrics, Number(config.maxContextSizeBytes));
     const logService = createLogService(logRepo);
     const cronScheduler = createCronScheduler(triggerRepo, agentService, Number(config.cronIntervalMs), metrics);
     const jobReaper = createJobReaper(

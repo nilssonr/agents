@@ -99,6 +99,31 @@ describe('Agent routes', () => {
         expect(res.json()).toHaveLength(1);
     });
 
+    it('POST /agents with empty body returns 400', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/agents',
+            payload: {},
+        });
+        expect(res.statusCode).toBe(400);
+        expect(res.json().error).toContain('name');
+    });
+
+    it('POST /agents with empty name returns 400', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/agents',
+            payload: { name: '' },
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('GET /agents/:id/jobs?status=invalid returns 400', async () => {
+        const agent = await agentService.createAgent('a', [], 3);
+        const res = await app.inject({ method: 'GET', url: `/agents/${agent.id}/jobs?status=invalid` });
+        expect(res.statusCode).toBe(400);
+    });
+
     it('GET /agents/:id/jobs?status=pending filters', async () => {
         const agent = await agentService.createAgent('a', [], 3);
         await agentService.invokeAgent(agent.id, null);

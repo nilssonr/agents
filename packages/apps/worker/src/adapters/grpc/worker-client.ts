@@ -16,6 +16,8 @@ export interface WorkerClientOptions {
     activityTimeoutMs?: number;
     /** Optional worker metrics for activity instrumentation. */
     metrics?: WorkerMetrics;
+    /** Maximum number of concurrent activity executions. Defaults to 1. */
+    concurrency?: number;
 }
 
 const BASE_RETRY_MS = 1000;
@@ -31,14 +33,17 @@ const MAX_RETRY_MS = 30000;
 const DEFAULT_ACTIVITY_TIMEOUT_MS = 60_000;
 
 export async function runWorker(options: WorkerClientOptions, signal: AbortSignal): Promise<void> {
-    const { workerId, client, registry, activityTimeoutMs = DEFAULT_ACTIVITY_TIMEOUT_MS, metrics } = options;
+    const { workerId, client, registry, activityTimeoutMs = DEFAULT_ACTIVITY_TIMEOUT_MS, metrics, concurrency = 1 } = options;
     let retryMs = BASE_RETRY_MS;
     let connected = false;
 
     while (!signal.aborted) {
         try {
             logger.info({ workerId }, 'subscribing to jobs');
-            const stream = client.subscribeToJobs({ workerId, capabilities: [] }, { signal });
+            const stream = client.subscribeToJobs({ workerId, capabilities: registry.listNames() }, { signal });
+
+            let inFlight = 0;
+            const pending: Promise<void>[] = [];
 
             for await (const assignment of stream) {
                 if (!connected) {
@@ -46,8 +51,24 @@ export async function runWorker(options: WorkerClientOptions, signal: AbortSigna
                     metrics?.connected.set(1);
                 }
                 retryMs = BASE_RETRY_MS;
-                await processAssignment(assignment, client, registry, activityTimeoutMs, metrics);
+
+                // Wait if at capacity
+                while (inFlight >= concurrency) {
+                    await Promise.race(pending);
+                }
+
+                inFlight++;
+                const p = processAssignment(assignment, client, registry, activityTimeoutMs, metrics)
+                    .finally(() => {
+                        inFlight--;
+                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                        pending.splice(pending.indexOf(p), 1);
+                    });
+                pending.push(p);
             }
+
+            // Wait for all in-flight to finish
+            await Promise.allSettled(pending);
         } catch (err: unknown) {
             if (signal.aborted) {
                 logger.info('worker shutting down');

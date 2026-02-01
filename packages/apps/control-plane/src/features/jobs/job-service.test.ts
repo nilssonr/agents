@@ -139,6 +139,47 @@ describe('JobService', () => {
             expect(updated?.current_step_id).toBe('b');
         });
 
+        it('fails job when context exceeds max size', async () => {
+            const smallLimit = 50; // 50 bytes
+            const limitedService = createJobService(jobRepo, agentRepo, onFailure, createFlowService(), undefined, smallLimit);
+            const activities = [
+                { id: 'a', type: 'fetch' },
+                { id: 'b', type: 'transform' },
+            ];
+            const agent = await agentRepo.create('a', activities, 3);
+            const job = await jobRepo.create(agent.id, null);
+            await jobRepo.claim(agent.id);
+
+            // Provide a large result that will push context over the limit
+            const bigResult = { data: 'x'.repeat(100) };
+            await limitedService.processStepResult(
+                job.id, agent.id, 'a', true, bigResult, undefined, activities,
+            );
+
+            const updated = jobRepo.jobs.find((j) => j.id === job.id);
+            expect(updated?.status).toBe('failed');
+            expect(updated?.error).toContain('Flow context exceeded maximum size');
+            expect(onFailure).toHaveBeenCalledWith(agent.id);
+        });
+
+        it('proceeds when context is within size limit', async () => {
+            const activities = [
+                { id: 'a', type: 'fetch' },
+                { id: 'b', type: 'transform' },
+            ];
+            const agent = await agentRepo.create('a', activities, 3);
+            const job = await jobRepo.create(agent.id, null);
+            await jobRepo.claim(agent.id);
+
+            await service.processStepResult(
+                job.id, agent.id, 'a', true, { next: 'b', data: 1 }, undefined, activities,
+            );
+
+            const updated = jobRepo.jobs.find((j) => j.id === job.id);
+            expect(updated?.status).toBe('pending');
+            expect(updated?.current_step_id).toBe('b');
+        });
+
         it('fails job when no recovery option', async () => {
             const activities = [{ id: 'a', type: 'noop' }];
             const agent = await agentRepo.create('a', activities, 3);

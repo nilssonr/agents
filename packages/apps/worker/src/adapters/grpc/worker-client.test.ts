@@ -171,6 +171,57 @@ describe('WorkerClient', () => {
         expect(client.reported[0]!.success).toBe(true);
     });
 
+    it('processes assignments concurrently with concurrency > 1', async () => {
+        const registry = createActivityRegistry();
+        const controller = new AbortController();
+        let maxConcurrent = 0;
+        let currentConcurrent = 0;
+
+        registry.register('concurrent', async () => {
+            currentConcurrent++;
+            if (currentConcurrent > maxConcurrent) maxConcurrent = currentConcurrent;
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            currentConcurrent--;
+            return { ok: true };
+        });
+
+        const client = createFakeClient([
+            { jobId: 'c1', agentId: 'a1', activityType: 'concurrent', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
+            { jobId: 'c2', agentId: 'a1', activityType: 'concurrent', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
+            { jobId: 'c3', agentId: 'a1', activityType: 'concurrent', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
+        ], controller);
+
+        await runWorker({ workerId: 'w1', client, registry, concurrency: 2 }, controller.signal);
+
+        expect(client.reported).toHaveLength(3);
+        expect(maxConcurrent).toBe(2);
+    });
+
+    it('processes assignments sequentially with concurrency 1', async () => {
+        const registry = createActivityRegistry();
+        const controller = new AbortController();
+        let maxConcurrent = 0;
+        let currentConcurrent = 0;
+
+        registry.register('seq', async () => {
+            currentConcurrent++;
+            if (currentConcurrent > maxConcurrent) maxConcurrent = currentConcurrent;
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            currentConcurrent--;
+            return { ok: true };
+        });
+
+        const client = createFakeClient([
+            { jobId: 's1', agentId: 'a1', activityType: 'seq', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
+            { jobId: 's2', agentId: 'a1', activityType: 'seq', paramsJson: '{}', payloadJson: '', stepId: '', contextJson: '{}' },
+        ], controller);
+
+        await runWorker({ workerId: 'w1', client, registry, concurrency: 1 }, controller.signal);
+
+        expect(client.reported).toHaveLength(2);
+        expect(maxConcurrent).toBe(1);
+    });
+
     it('reconnects after a connection error', async () => {
         const registry = createActivityRegistry();
         const controller = new AbortController();

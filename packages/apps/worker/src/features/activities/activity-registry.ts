@@ -13,6 +13,8 @@ export interface ActivityRegistry {
     register(name: string, fn: ActivityFn): void;
     get(name: string): ActivityFn | undefined;
     has(name: string): boolean;
+    /** Returns all registered activity type names. */
+    listNames(): string[];
 }
 
 /**
@@ -31,6 +33,9 @@ export function createActivityRegistry(): ActivityRegistry {
         },
         has(name): boolean {
             return activities.has(name);
+        },
+        listNames(): string[] {
+            return [...activities.keys()];
         },
     };
 

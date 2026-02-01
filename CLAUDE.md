@@ -78,7 +78,7 @@ index.ts           # Creates the app, starts it, handles process signals
 | Feature | Location | Description |
 |---------|----------|-------------|
 | **agents** | `control-plane/src/features/agents/` | Agent CRUD, invocation, failure tracking (auto-pause at threshold), restart |
-| **jobs** | `control-plane/src/features/jobs/` | Job lifecycle: claim, complete, fail, multi-step routing via flow service, stale job reaping |
+| **jobs** | `control-plane/src/features/jobs/` | Job lifecycle: claim, complete, fail, multi-step routing via flow service, stale job reaping, context size limits |
 | **flows** | `control-plane/src/features/flows/` | Multi-step orchestration: step parsing, success/failure transitions, retry logic, error handlers |
 | **logs** | `control-plane/src/features/logs/` | Batch append and retrieval of structured job execution logs |
 | **triggers** | `control-plane/src/features/triggers/` | Cron and webhook trigger definitions attached to agents |
@@ -89,7 +89,7 @@ index.ts           # Creates the app, starts it, handles process signals
 
 | Feature | Location | Description |
 |---------|----------|-------------|
-| **activities** | `worker/src/features/activities/` | Activity registry with built-in activities: `noop`, `http-request`, `log` |
+| **activities** | `worker/src/features/activities/` | Activity registry with built-in activities: `noop`, `http-request`, `log`; exposes `listNames()` for capabilities |
 | **metrics** | `worker/src/features/metrics/` | Prometheus metrics: activity totals/duration, job totals/duration, reconnects counter, connected gauge |
 
 ### Database tables
@@ -114,12 +114,13 @@ Schema lives in `control-plane/sql/schema.sql`. Migrations in `control-plane/sql
 
 - `AgentNotFoundError` → mapped to HTTP 404
 - `AgentPausedError` → mapped to HTTP 409
+- `ValidationError` → mapped to HTTP 400 (Zod-based input validation)
 
 ## REST API endpoints
 
 ### Agents
 
-- `POST /agents` — Create agent (body: `{ name, activities?, failure_threshold? }`) → 201
+- `POST /agents` — Create agent (body: `{ name, activities?, failure_threshold? }`, Zod-validated) → 201
 - `GET /agents` — List all agents
 - `GET /agents/:id` — Get agent
 - `DELETE /agents/:id` — Delete agent
@@ -148,7 +149,7 @@ Both apps serve Prometheus metrics on a dedicated `METRICS_PORT` (default 9090) 
 
 Defined in `packages/libs/contracts/proto/agents/v1/worker.proto`:
 
-- **SubscribeToJobs(SubscribeRequest) → stream JobAssignment** — Worker subscribes; control-plane polls agents and streams assignments
+- **SubscribeToJobs(SubscribeRequest) → stream JobAssignment** — Worker subscribes with capabilities; control-plane polls agents, filters by capabilities, and streams assignments
 - **ReportJobResult(JobResult) → JobAck** — Worker reports step/job result with optional logs
 
 ## Dependency wiring
@@ -160,7 +161,7 @@ Defined in `packages/libs/contracts/proto/agents/v1/worker.proto`:
 3. `createMigrationRunner()` → `migrationRunner.up()` on start
 4. Repositories: `createPgAgentRepository`, `createPgJobRepository`, `createPgLogRepository`, `createPgTriggerRepository`
 5. `createMetrics()` → metrics + registry → `createMetricsServer(registry, metricsPort)`
-6. Services: `createFlowService`, `createAgentService(agentRepo, jobRepo)`, `createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService, metrics)`, `createLogService(logRepo)`
+6. Services: `createFlowService`, `createAgentService(agentRepo, jobRepo)`, `createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService, metrics, maxContextSizeBytes)`, `createLogService(logRepo)`
 7. `createJobReaper(jobRepo, agentService.handleJobFailure, { ttlMs, intervalMs })`
 8. `createCronScheduler(triggerRepo, agentService, intervalMs, metrics)`
 9. `buildRestServer({ agentService, jobService, logService, checkDb })`
@@ -186,6 +187,7 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 | `JOB_REAPER_INTERVAL_MS` | No | 60000 | Job reaper tick interval (ms) |
 | `GRPC_POLL_INTERVAL_MS` | No | 1000 | Job polling interval (ms) |
 | `METRICS_PORT` | No | 9090 | Prometheus metrics HTTP server port |
+| `MAX_CONTEXT_SIZE_BYTES` | No | 1048576 | Maximum flow context size in bytes (1 MB default) |
 
 ### Worker environment variables
 
@@ -196,6 +198,7 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 | `ACTIVITY_TIMEOUT_MS` | No | 60000 | Max time for a single activity execution (ms) |
 | `SHUTDOWN_GRACE_MS` | No | 10000 | Grace period for in-flight work on shutdown (ms) |
 | `METRICS_PORT` | No | 9090 | Worker metrics HTTP server port |
+| `WORKER_CONCURRENCY` | No | 1 | Max concurrent activity executions |
 
 ## Code style
 
@@ -218,4 +221,4 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 
 ## Verification
 
-Always run `pnpm build && pnpm test` after changes. Currently 133 tests across 26 test files.
+Always run `pnpm build && pnpm test` after changes. Currently 154 tests across 27 test files.

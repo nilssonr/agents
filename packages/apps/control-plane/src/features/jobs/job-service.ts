@@ -27,12 +27,16 @@ export interface JobService {
  * delegates to `onJobFailure` so the agent service can track failures and
  * potentially pause the agent.
  */
+/** Default maximum flow context size in bytes (1 MB). */
+const DEFAULT_MAX_CONTEXT_SIZE_BYTES = 1_048_576;
+
 export function createJobService(
     jobs: JobRepository,
     agents: AgentRepository,
     onJobFailure: (agentId: string) => Promise<void>,
     flows: FlowService,
     metrics?: Metrics,
+    maxContextSizeBytes: number = DEFAULT_MAX_CONTEXT_SIZE_BYTES,
 ): JobService {
     return {
         async getJobsForAgent(agentId, status): Promise<JobRow[]> {
@@ -67,6 +71,12 @@ export function createJobService(
 
             if (success) {
                 const transition = flows.handleStepSuccess(activities, stepId, result, job.context);
+                const contextSize = Buffer.byteLength(JSON.stringify(transition.updatedContext), 'utf8');
+                if (contextSize > maxContextSizeBytes) {
+                    await jobs.fail(jobId, `Flow context exceeded maximum size (${String(contextSize)} > ${String(maxContextSizeBytes)} bytes)`);
+                    await onJobFailure(agentId);
+                    return;
+                }
                 if (transition.nextStepId) {
                     await jobs.updateStep(jobId, transition.nextStepId, transition.updatedContext);
                 } else {

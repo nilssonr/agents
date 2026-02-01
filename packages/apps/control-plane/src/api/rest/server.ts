@@ -22,6 +22,13 @@ export interface RestServerDeps {
 export function buildRestServer(deps: RestServerDeps): FastifyInstance {
     const app = Fastify();
 
+    app.setErrorHandler((err: unknown, _request, reply) => {
+        if (err instanceof Error && err.name === 'ValidationError') {
+            return reply.status(400).send({ error: err.message });
+        }
+        throw err;
+    });
+
     registerAgentRoutes(app, deps);
     registerJobRoutes(app, deps);
     registerWebhookRoutes(app, deps);
