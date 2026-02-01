@@ -105,6 +105,7 @@ export function createWorkerServiceImpl(
                             payloadJson: job.payload ? JSON.stringify(job.payload) : '',
                             stepId: stepId ?? '',
                             contextJson: JSON.stringify(stepContext),
+                            stepLabel: currentStep?.label ?? '',
                         };
                         options.metrics?.grpcAssignments.inc();
                     }

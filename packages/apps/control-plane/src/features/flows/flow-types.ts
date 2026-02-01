@@ -2,6 +2,7 @@
 export interface FlowStep {
     id: string;
     type: string;
+    label?: string | undefined;
     params?: unknown;
     maxRetries?: number | undefined;
     onError?: Record<string, string> | undefined;

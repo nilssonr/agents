@@ -20,6 +20,7 @@ message JobAssignment {
     string payload_json = 5;
     string step_id = 6;
     string context_json = 7;
+    string step_label = 8;
 }
 
 message JobResult {

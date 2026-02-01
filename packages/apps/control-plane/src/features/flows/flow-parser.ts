@@ -23,6 +23,7 @@ export function parseFlowSteps(activities: unknown): FlowStep[] {
         return {
             id: typeof a.id === 'string' ? a.id : `step_${String(index)}`,
             type: a.type,
+            label: typeof a.label === 'string' ? a.label : undefined,
             params: a.params,
             maxRetries: typeof a.maxRetries === 'number' ? a.maxRetries : undefined,
             onError: a.onError && typeof a.onError === 'object' ? (a.onError as Record<string, string>) : undefined,
