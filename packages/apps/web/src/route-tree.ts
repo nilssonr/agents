@@ -4,9 +4,4 @@ import { agentsIndexRoute } from './routes/agents/index';
 import { agentDetailRoute } from './routes/agents/$agentId';
 import { jobDetailRoute } from './routes/jobs/$jobId';
 
-export const routeTree = rootRoute.addChildren([
-    indexRoute,
-    agentsIndexRoute,
-    agentDetailRoute,
-    jobDetailRoute,
-]);
+export const routeTree = rootRoute.addChildren([indexRoute, agentsIndexRoute, agentDetailRoute, jobDetailRoute]);

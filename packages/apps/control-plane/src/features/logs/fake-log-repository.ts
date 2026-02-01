@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { randomUUID } from 'node:crypto';
 
 import type { LogEntry, LogEntryInput, LogRepository } from './log-repository.js';

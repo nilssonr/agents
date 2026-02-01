@@ -42,23 +42,23 @@ The **control-plane** manages agents, schedules jobs, orchestrates multi-step fl
 
 ## Tech Stack
 
-| Layer       | Technology                           |
-| ----------- | ------------------------------------ |
-| Runtime     | Node.js (ES modules)                 |
-| Language    | TypeScript 5.7                       |
-| REST API    | Fastify 5                            |
-| gRPC        | nice-grpc 2 + Protobuf (buf/ts-proto)|
-| Database    | PostgreSQL 17                        |
-| SQL codegen | sqlc                                 |
-| Validation  | Zod                                  |
-| Scheduling  | croner                               |
-| Logging     | pino                                 |
-| Testing     | Vitest                               |
+| Layer       | Technology                              |
+| ----------- | --------------------------------------- |
+| Runtime     | Node.js (ES modules)                    |
+| Language    | TypeScript 5.7                          |
+| REST API    | Fastify 5                               |
+| gRPC        | nice-grpc 2 + Protobuf (buf/ts-proto)   |
+| Database    | PostgreSQL 17                           |
+| SQL codegen | sqlc                                    |
+| Validation  | Zod                                     |
+| Scheduling  | croner                                  |
+| Logging     | pino                                    |
+| Testing     | Vitest                                  |
 | Web UI      | React 19, Vite, Tailwind CSS, shadcn/ui |
 | API Client  | openapi-fetch (typed from OpenAPI spec) |
-| Routing     | TanStack Router                      |
-| Data        | TanStack React Query                 |
-| Monorepo    | pnpm workspaces                      |
+| Routing     | TanStack Router                         |
+| Data        | TanStack React Query                    |
+| Monorepo    | pnpm workspaces                         |
 
 ## Project Structure
 
@@ -172,35 +172,35 @@ Migrations run automatically on control-plane startup.
 
 ### Agents
 
-| Method | Path                    | Description                        |
-| ------ | ----------------------- | ---------------------------------- |
-| POST   | `/agents`               | Create an agent (Zod-validated)    |
-| GET    | `/agents`               | List all agents                    |
-| GET    | `/agents/:id`           | Get an agent                       |
-| DELETE | `/agents/:id`           | Delete an agent                    |
-| POST   | `/agents/:id/invoke`    | Invoke an agent (create a job)     |
-| POST   | `/agents/:id/restart`   | Restart a paused agent             |
-| GET    | `/agents/:id/jobs`      | List jobs for an agent             |
+| Method | Path                  | Description                     |
+| ------ | --------------------- | ------------------------------- |
+| POST   | `/agents`             | Create an agent (Zod-validated) |
+| GET    | `/agents`             | List all agents                 |
+| GET    | `/agents/:id`         | Get an agent                    |
+| DELETE | `/agents/:id`         | Delete an agent                 |
+| POST   | `/agents/:id/invoke`  | Invoke an agent (create a job)  |
+| POST   | `/agents/:id/restart` | Restart a paused agent          |
+| GET    | `/agents/:id/jobs`    | List jobs for an agent          |
 
 ### Jobs
 
-| Method | Path              | Description              |
-| ------ | ----------------- | ------------------------ |
-| GET    | `/jobs/:id/logs`  | Get logs for a job       |
+| Method | Path             | Description        |
+| ------ | ---------------- | ------------------ |
+| GET    | `/jobs/:id/logs` | Get logs for a job |
 
 ### Health
 
-| Method | Path       | Description                                  |
-| ------ | ---------- | -------------------------------------------- |
-| GET    | `/health`  | Liveness probe (always 200)                  |
-| GET    | `/ready`   | Readiness probe (DB ping, 200 or 503)        |
+| Method | Path      | Description                           |
+| ------ | --------- | ------------------------------------- |
+| GET    | `/health` | Liveness probe (always 200)           |
+| GET    | `/ready`  | Readiness probe (DB ping, 200 or 503) |
 
 ### OpenAPI / Swagger UI
 
-| Method | Path          | Description                        |
-| ------ | ------------- | ---------------------------------- |
-| GET    | `/docs`       | Swagger UI interactive docs        |
-| GET    | `/docs/json`  | OpenAPI 3.1 JSON specification     |
+| Method | Path         | Description                    |
+| ------ | ------------ | ------------------------------ |
+| GET    | `/docs`      | Swagger UI interactive docs    |
+| GET    | `/docs/json` | OpenAPI 3.1 JSON specification |
 
 All REST routes include JSON Schema definitions for request and response bodies. Error responses use [RFC 7807 Problem Details](https://www.rfc-editor.org/rfc/rfc7807) (`application/problem+json`).
 
@@ -210,9 +210,9 @@ Both control-plane and worker serve Prometheus metrics on a dedicated `METRICS_P
 
 ### Webhooks
 
-| Method | Path                    | Description                        |
-| ------ | ----------------------- | ---------------------------------- |
-| POST   | `/webhooks/:agentId`    | External trigger for an agent      |
+| Method | Path                 | Description                   |
+| ------ | -------------------- | ----------------------------- |
+| POST   | `/webhooks/:agentId` | External trigger for an agent |
 
 ## gRPC API
 
@@ -227,38 +227,39 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 
 ```json
 [
-  {
-    "type": "http-request",
-    "params": {
-      "method": { "type": "literal", "value": "GET" },
-      "url": { "type": "literal", "value": "https://api.example.com/data" }
+    {
+        "type": "http-request",
+        "params": {
+            "method": { "type": "literal", "value": "GET" },
+            "url": { "type": "literal", "value": "https://api.example.com/data" }
+        },
+        "maxRetries": 2,
+        "onError": { "default": "notify" }
     },
-    "maxRetries": 2,
-    "onError": { "default": "notify" }
-  },
-  {
-    "id": "notify",
-    "type": "log",
-    "params": {
-      "message": { "type": "context", "ref": "step_0.body.message" },
-      "level": { "type": "literal", "value": "warn" }
+    {
+        "id": "notify",
+        "type": "log",
+        "params": {
+            "message": { "type": "context", "ref": "step_0.body.message" },
+            "level": { "type": "literal", "value": "warn" }
+        }
     }
-  }
 ]
 ```
 
 **Step routing:**
+
 - On success, a step can return `{ next: "step_id" }` to route to a specific step, or complete the flow
 - On failure, the system checks `maxRetries`, then `onError` handlers (by error type or `default`), then fails the job
 - Step results accumulate in a flow context, accessible by subsequent steps via `{ "type": "context", "ref": "step_0.body.field" }` value references
 
 ## Built-in Activities
 
-| Activity        | Description                                                         |
-| --------------- | ------------------------------------------------------------------- |
-| `noop`          | No-op placeholder, returns `{ ok: true }`                           |
-| `http-request`  | Zod-validated HTTP client with context-aware parameter resolution    |
-| `log`           | Emits a structured log entry at a specified level                   |
+| Activity       | Description                                                       |
+| -------------- | ----------------------------------------------------------------- |
+| `noop`         | No-op placeholder, returns `{ ok: true }`                         |
+| `http-request` | Zod-validated HTTP client with context-aware parameter resolution |
+| `log`          | Emits a structured log entry at a specified level                 |
 
 ## Fault Tolerance
 
@@ -283,45 +284,47 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 
 ### Control-Plane
 
-| Variable             | Required | Default | Description                     |
-| -------------------- | -------- | ------- | ------------------------------- |
-| `DATABASE_URL`       | Yes      | —       | PostgreSQL connection string    |
-| `DB_POOL_MIN`        | No       | 2       | Minimum pool connections        |
-| `DB_POOL_MAX`        | No       | 10      | Maximum pool connections        |
-| `DB_CONNECTION_TIMEOUT_MS` | No | 5000    | Connection acquire timeout (ms) |
-| `DB_IDLE_TIMEOUT_MS` | No       | 30000   | Idle connection timeout (ms)    |
-| `HTTP_PORT`          | No       | —       | REST server port                |
-| `GRPC_PORT`          | No       | —       | gRPC server port                |
-| `CRON_INTERVAL_MS`   | No       | 60000   | Scheduler tick interval (ms)    |
-| `JOB_REAPER_TTL_MS`  | No       | 300000  | Time before a running job is considered stuck (ms) |
-| `JOB_REAPER_INTERVAL_MS` | No  | 60000   | Job reaper tick interval (ms)   |
-| `GRPC_POLL_INTERVAL_MS` | No   | 1000    | Job polling interval (ms)       |
-| `METRICS_PORT`       | No       | 9090    | Prometheus metrics HTTP server port |
-| `MAX_CONTEXT_SIZE_BYTES` | No  | 1048576 | Maximum flow context size in bytes  |
-| `CORS_ORIGIN`  | No       | —       | Allowed CORS origin (enables CORS when set) |
+| Variable                   | Required | Default | Description                                        |
+| -------------------------- | -------- | ------- | -------------------------------------------------- |
+| `DATABASE_URL`             | Yes      | —       | PostgreSQL connection string                       |
+| `DB_POOL_MIN`              | No       | 2       | Minimum pool connections                           |
+| `DB_POOL_MAX`              | No       | 10      | Maximum pool connections                           |
+| `DB_CONNECTION_TIMEOUT_MS` | No       | 5000    | Connection acquire timeout (ms)                    |
+| `DB_IDLE_TIMEOUT_MS`       | No       | 30000   | Idle connection timeout (ms)                       |
+| `HTTP_PORT`                | No       | —       | REST server port                                   |
+| `GRPC_PORT`                | No       | —       | gRPC server port                                   |
+| `CRON_INTERVAL_MS`         | No       | 60000   | Scheduler tick interval (ms)                       |
+| `JOB_REAPER_TTL_MS`        | No       | 300000  | Time before a running job is considered stuck (ms) |
+| `JOB_REAPER_INTERVAL_MS`   | No       | 60000   | Job reaper tick interval (ms)                      |
+| `GRPC_POLL_INTERVAL_MS`    | No       | 1000    | Job polling interval (ms)                          |
+| `METRICS_PORT`             | No       | 9090    | Prometheus metrics HTTP server port                |
+| `MAX_CONTEXT_SIZE_BYTES`   | No       | 1048576 | Maximum flow context size in bytes                 |
+| `CORS_ORIGIN`              | No       | —       | Allowed CORS origin (enables CORS when set)        |
 
 ### Worker
 
-| Variable        | Required | Default              | Description                      |
-| --------------- | -------- | -------------------- | -------------------------------- |
-| `GRPC_ADDRESS`  | Yes      | —                    | Control-plane gRPC endpoint      |
-| `WORKER_ID`     | No       | `worker-{timestamp}` | Unique worker identifier         |
-| `ACTIVITY_TIMEOUT_MS` | No | 60000              | Max time for a single activity execution (ms) |
-| `SHUTDOWN_GRACE_MS` | No   | 10000              | Grace period for in-flight work on shutdown (ms) |
-| `METRICS_PORT`  | No       | 9090               | Worker metrics HTTP server port  |
-| `WORKER_CONCURRENCY` | No  | 1                  | Max concurrent activity executions |
+| Variable              | Required | Default              | Description                                      |
+| --------------------- | -------- | -------------------- | ------------------------------------------------ |
+| `GRPC_ADDRESS`        | Yes      | —                    | Control-plane gRPC endpoint                      |
+| `WORKER_ID`           | No       | `worker-{timestamp}` | Unique worker identifier                         |
+| `ACTIVITY_TIMEOUT_MS` | No       | 60000                | Max time for a single activity execution (ms)    |
+| `SHUTDOWN_GRACE_MS`   | No       | 10000                | Grace period for in-flight work on shutdown (ms) |
+| `METRICS_PORT`        | No       | 9090                 | Worker metrics HTTP server port                  |
+| `WORKER_CONCURRENCY`  | No       | 1                    | Max concurrent activity executions               |
 
 ## Web UI
 
 A React-based management dashboard for agents and jobs. Built with Vite, Tailwind CSS, shadcn/ui components, TanStack Router, and TanStack React Query.
 
 **Pages:**
+
 - **Dashboard** — Agent count and health status
 - **Agents** — List, create, delete agents with status badges
 - **Agent Detail** — View agent info, invoke with JSON payload, restart paused agents, browse jobs
 - **Job Detail** — View job logs with level badges and step IDs
 
 **Development:**
+
 ```bash
 # Start the web UI dev server (proxies /api to localhost:3000)
 pnpm --filter @agents/web dev

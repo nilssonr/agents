@@ -1,6 +1,8 @@
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 
 /**
@@ -11,7 +13,6 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest';
  * and calling the parser on them.
  */
 import { parseMigrationFile } from './migration-parser.js';
-import { readdir, readFile } from 'node:fs/promises';
 
 describe('migration file loading', () => {
     let dir: string;
@@ -37,11 +38,19 @@ describe('migration file loading', () => {
         const entries = (await readdir(dir)).filter((f) => f.endsWith('.sql')).sort();
         expect(entries).toEqual(['001_first.sql', '002_second.sql']);
 
-        const first = parseMigrationFile(await readFile(join(dir, entries[0]!), 'utf-8'));
-        expect(first.up).toBe('CREATE TABLE a (id INT);');
+        const firstFile = entries[0];
+        expect(firstFile).toBeDefined();
+        if (firstFile) {
+            const first = parseMigrationFile(await readFile(join(dir, firstFile), 'utf-8'));
+            expect(first.up).toBe('CREATE TABLE a (id INT);');
+        }
 
-        const second = parseMigrationFile(await readFile(join(dir, entries[1]!), 'utf-8'));
-        expect(second.up).toBe('CREATE TABLE b (id INT);');
+        const secondFile = entries[1];
+        expect(secondFile).toBeDefined();
+        if (secondFile) {
+            const second = parseMigrationFile(await readFile(join(dir, secondFile), 'utf-8'));
+            expect(second.up).toBe('CREATE TABLE b (id INT);');
+        }
     });
 
     it('ignores non-sql files', async () => {

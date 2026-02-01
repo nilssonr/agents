@@ -1,6 +1,4 @@
-export {
-    WorkerServiceDefinition,
-} from './generated/agents/v1/worker.js';
+export { WorkerServiceDefinition } from './generated/agents/v1/worker.js';
 
 export type {
     WorkerServiceImplementation,

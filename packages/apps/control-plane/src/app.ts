@@ -1,15 +1,18 @@
-import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
-import pg from 'pg';
+import { fileURLToPath } from 'node:url';
 
 import { loadConfig } from '@agents/config';
 import { createMetricsServer } from '@agents/metrics';
 import { createMigrationRunner } from '@agents/migrations';
+import pg from 'pg';
 
 import { createPgAgentRepository } from './adapters/postgres/pg-agent-repository.js';
 import { createPgJobRepository } from './adapters/postgres/pg-job-repository.js';
 import { createPgLogRepository } from './adapters/postgres/pg-log-repository.js';
 import { createPgTriggerRepository } from './adapters/postgres/pg-trigger-repository.js';
+import { startGrpcServer } from './api/grpc/server.js';
+import { createWorkerServiceImpl } from './api/grpc/worker-service-impl.js';
+import { buildRestServer } from './api/rest/server.js';
 import { createAgentService } from './features/agents/agent-service.js';
 import { createFlowService } from './features/flows/flow-service.js';
 import { createJobReaper } from './features/jobs/job-reaper.js';
@@ -17,9 +20,6 @@ import { createJobService } from './features/jobs/job-service.js';
 import { createLogService } from './features/logs/log-service.js';
 import { createMetrics } from './features/metrics/metrics.js';
 import { createCronScheduler } from './features/scheduler/cron-scheduler.js';
-import { startGrpcServer } from './api/grpc/server.js';
-import { createWorkerServiceImpl } from './api/grpc/worker-service-impl.js';
-import { buildRestServer } from './api/rest/server.js';
 
 /** The control-plane application handle with lifecycle methods. */
 export interface App {
@@ -73,7 +73,14 @@ export async function createApp(): Promise<App> {
     // Features
     const flowService = createFlowService();
     const agentService = createAgentService(agentRepo, jobRepo);
-    const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService, metrics, Number(config.maxContextSizeBytes));
+    const jobService = createJobService(
+        jobRepo,
+        agentRepo,
+        (agentId) => agentService.handleJobFailure(agentId),
+        flowService,
+        metrics,
+        Number(config.maxContextSizeBytes),
+    );
     const logService = createLogService(logRepo);
     const cronScheduler = createCronScheduler(triggerRepo, agentService, Number(config.cronIntervalMs), metrics);
     const jobReaper = createJobReaper(
@@ -89,7 +96,9 @@ export async function createApp(): Promise<App> {
         agentService,
         jobService,
         logService,
-        checkDb: async () => { await pool.query('SELECT 1'); },
+        checkDb: async () => {
+            await pool.query('SELECT 1');
+        },
         corsOrigin: config.corsOrigin,
     });
     const workerImpl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, logService, {

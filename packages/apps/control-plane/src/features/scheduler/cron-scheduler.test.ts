@@ -4,6 +4,7 @@ import { createAgentService } from '../agents/agent-service.js';
 import { createFakeAgentRepository } from '../agents/fake-agent-repository.js';
 import { createFakeJobRepository } from '../jobs/fake-job-repository.js';
 import { createFakeTriggerRepository } from '../triggers/fake-trigger-repository.js';
+
 import { createCronScheduler } from './cron-scheduler.js';
 import type { CronScheduler } from './cron-scheduler.js';
 
@@ -37,7 +38,11 @@ describe('CronScheduler', () => {
         await vi.advanceTimersByTimeAsync(0);
 
         expect(jobRepo.jobs.length).toBeGreaterThanOrEqual(1);
-        expect(jobRepo.jobs[0]!.agent_id).toBe(agent.id);
+        const firstJob = jobRepo.jobs.at(0);
+        expect(firstJob).toBeDefined();
+        if (firstJob) {
+            expect(firstJob.agent_id).toBe(agent.id);
+        }
     });
 
     it('persists last_fired_at to the trigger repository', async () => {
@@ -49,8 +54,9 @@ describe('CronScheduler', () => {
         vi.advanceTimersByTime(60_000);
         await vi.advanceTimersByTimeAsync(0);
 
-        const updated = triggerRepo.triggers.find((t) => t.id === trigger.id)!;
-        expect(updated.last_fired_at).not.toBeNull();
+        const updated = triggerRepo.triggers.find((t) => t.id === trigger.id);
+        expect(updated).toBeDefined();
+        expect(updated?.last_fired_at).not.toBeNull();
     });
 
     it('does not create jobs when no cron triggers exist', async () => {
@@ -60,6 +66,6 @@ describe('CronScheduler', () => {
         vi.advanceTimersByTime(60_000);
         await vi.advanceTimersByTimeAsync(0);
 
-        expect(jobRepo.jobs).toHaveLength(0);
+        expect(jobRepo.jobs.length).toBe(0);
     });
 });

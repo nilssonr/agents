@@ -1,11 +1,12 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 
-import { createFakeAgentRepository } from './fake-agent-repository.js';
 import { createFakeJobRepository } from '../jobs/fake-job-repository.js';
-import type { AgentRepository } from './agent-repository.js';
 import type { JobRepository } from '../jobs/job-repository.js';
+
+import type { AgentRepository } from './agent-repository.js';
 import { AgentNotFoundError, AgentPausedError, createAgentService } from './agent-service.js';
 import type { AgentService } from './agent-service.js';
+import { createFakeAgentRepository } from './fake-agent-repository.js';
 
 describe('AgentService', () => {
     let agentRepo: AgentRepository;
@@ -41,8 +42,7 @@ describe('AgentService', () => {
     it('deletes an agent', async () => {
         const agent = await service.createAgent('a', [], 3);
         await service.deleteAgent(agent.id);
-        const found = await service.getAgent(agent.id);
-        expect(found).toBeNull();
+        await expect(service.getAgent(agent.id)).resolves.toBeNull();
     });
 
     it('invokes an active agent and creates a job', async () => {

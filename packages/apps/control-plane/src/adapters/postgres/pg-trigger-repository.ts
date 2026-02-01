@@ -41,10 +41,7 @@ export function createPgTriggerRepository(pool: Pool): TriggerRepository {
         },
 
         async updateLastFiredAt(id, firedAt): Promise<void> {
-            await pool.query(
-                'UPDATE triggers SET last_fired_at = $1 WHERE id = $2',
-                [firedAt, id],
-            );
+            await pool.query('UPDATE triggers SET last_fired_at = $1 WHERE id = $2', [firedAt, id]);
         },
     };
 }

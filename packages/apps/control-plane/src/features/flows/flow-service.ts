@@ -29,9 +29,7 @@ export function createFlowService(): FlowService {
     return {
         getInitialStep(activities: unknown): FlowStep | null {
             const steps = parseFlowSteps(activities);
-            return steps.length > 0
-                ? steps[0]!
-                : null;
+            return steps.length > 0 ? steps[0] : null;
         },
 
         handleStepSuccess(
@@ -86,7 +84,7 @@ export function createFlowService(): FlowService {
             if (step.onError) {
                 // Try specific error type first
                 if (error.type && step.onError[error.type]) {
-                    const targetId = step.onError[error.type]!;
+                    const targetId = step.onError[error.type];
                     if (findStepById(steps, targetId)) {
                         return { nextStepId: targetId, retry: false };
                     }

@@ -1,8 +1,7 @@
-import { createChannel, createClient } from 'nice-grpc';
-
 import { loadConfig } from '@agents/config';
 import { WorkerServiceDefinition } from '@agents/contracts';
 import { createMetricsServer } from '@agents/metrics';
+import { createChannel, createClient } from 'nice-grpc';
 
 import { runWorker } from './adapters/grpc/worker-client.js';
 import { createActivityRegistry } from './features/activities/activity-registry.js';
@@ -60,10 +59,7 @@ export function createApp(): App {
             abortController.abort();
             await metricsServer.stop();
             if (workerPromise) {
-                await Promise.race([
-                    workerPromise,
-                    new Promise((resolve) => setTimeout(resolve, graceMs)),
-                ]);
+                await Promise.race([workerPromise, new Promise((resolve) => setTimeout(resolve, graceMs))]);
             }
         },
     };

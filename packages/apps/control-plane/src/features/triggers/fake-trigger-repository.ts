@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { randomUUID } from 'node:crypto';
 
 import type { TriggerRepository, TriggerRow } from './trigger-repository.js';
@@ -27,9 +28,7 @@ export function createFakeTriggerRepository(): TriggerRepository & { triggers: T
             return triggers.filter((t) => t.agent_id === agentId);
         },
         async getCronTriggers(): Promise<Array<TriggerRow & { agent_status: string }>> {
-            return triggers
-                .filter((t) => t.kind === 'cron')
-                .map((t) => ({ ...t, agent_status: 'active' }));
+            return triggers.filter((t) => t.kind === 'cron').map((t) => ({ ...t, agent_status: 'active' }));
         },
         async delete(id): Promise<void> {
             const idx = triggers.findIndex((t) => t.id === id);

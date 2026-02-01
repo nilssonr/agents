@@ -14,7 +14,7 @@ export function parseFlowSteps(activities: unknown): FlowStep[] {
 
     const steps: FlowStep[] = activities.map((activity: unknown, index: number) => {
         const a = activity as Record<string, unknown>;
-        if (!a || typeof a !== 'object') {
+        if (typeof a !== 'object') {
             throw new Error(`Activity at index ${String(index)} is not an object`);
         }
         if (!a.type || typeof a.type !== 'string') {
@@ -25,9 +25,7 @@ export function parseFlowSteps(activities: unknown): FlowStep[] {
             type: a.type,
             params: a.params,
             maxRetries: typeof a.maxRetries === 'number' ? a.maxRetries : undefined,
-            onError: a.onError && typeof a.onError === 'object'
-                ? a.onError as Record<string, string>
-                : undefined,
+            onError: a.onError && typeof a.onError === 'object' ? (a.onError as Record<string, string>) : undefined,
         };
     });
 
@@ -45,9 +43,7 @@ export function parseFlowSteps(activities: unknown): FlowStep[] {
         if (step.onError) {
             for (const [key, targetId] of Object.entries(step.onError)) {
                 if (!ids.has(targetId)) {
-                    throw new Error(
-                        `Step '${step.id}' onError['${key}'] references unknown step '${targetId}'`,
-                    );
+                    throw new Error(`Step '${step.id}' onError['${key}'] references unknown step '${targetId}'`);
                 }
             }
         }

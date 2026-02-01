@@ -1,7 +1,9 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type pg from 'pg';
+
 import { createLogger } from '@agents/logger';
+import type pg from 'pg';
+
 import { parseMigrationFile } from './migration-parser.js';
 
 const log = createLogger('migrations');
@@ -99,8 +101,10 @@ export function createMigrationRunner(pool: pg.Pool, opts: MigrationRunnerOption
                         'INSERT INTO schema_migrations (name) VALUES ($1) RETURNING id, name, applied_at',
                         [migration.name],
                     );
-                    const r = row.rows[0]!;
-                    results.push({ id: r.id, name: r.name, appliedAt: r.applied_at });
+                    const r = row.rows[0];
+                    if (r) {
+                        results.push({ id: r.id, name: r.name, appliedAt: r.applied_at });
+                    }
                 }
                 await client.query('COMMIT');
                 log.info({ count: results.length }, 'migrations applied successfully');
@@ -121,7 +125,8 @@ export function createMigrationRunner(pool: pg.Pool, opts: MigrationRunnerOption
             );
             if (last.rows.length === 0) return undefined;
 
-            const row = last.rows[0]!;
+            const row = last.rows[0];
+            if (!row) return undefined;
             const allFiles = await loadMigrationFiles(opts.migrationsPath);
             const migration = allFiles.find((m) => m.name === row.name);
             if (!migration) {

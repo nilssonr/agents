@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { parseMigrationFile } from './migration-parser.js';
 
 describe('parseMigrationFile', () => {
@@ -15,9 +16,7 @@ DROP TABLE foo;`;
     });
 
     it('throws on missing up marker', () => {
-        expect(() => parseMigrationFile('CREATE TABLE foo (id INT);')).toThrow(
-            'missing "-- migrate:up" marker',
-        );
+        expect(() => parseMigrationFile('CREATE TABLE foo (id INT);')).toThrow('missing "-- migrate:up" marker');
     });
 
     it('handles empty down section', () => {

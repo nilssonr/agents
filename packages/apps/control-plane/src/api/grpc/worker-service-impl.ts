@@ -1,6 +1,12 @@
+import type {
+    DeepPartial,
+    JobAssignment,
+    SubscribeRequest,
+    JobResult,
+    JobAck,
+    WorkerServiceImplementation,
+} from '@agents/contracts';
 import type { CallContext } from 'nice-grpc-common';
-
-import type { DeepPartial, JobAssignment, SubscribeRequest, JobResult, JobAck, WorkerServiceImplementation } from '@agents/contracts';
 
 import type { AgentRow } from '../../features/agents/agent-repository.js';
 import type { AgentService } from '../../features/agents/agent-service.js';
@@ -48,9 +54,12 @@ export function createWorkerServiceImpl(
                         const agentActivities = Array.isArray(agent.activities)
                             ? (agent.activities as Array<{ type?: string }>)
                             : [];
-                        const firstStep = agentActivities[0];
-                        if (firstStep && !capabilities.has(firstStep.type ?? '')) {
-                            continue;
+                        const firstStep = agentActivities.at(0);
+                        if (firstStep) {
+                            const stepType = firstStep.type ?? '';
+                            if (!capabilities.has(stepType)) {
+                                continue;
+                            }
                         }
                     }
                     const job = await jobService.claimNextJob(agent.id);
@@ -60,7 +69,7 @@ export function createWorkerServiceImpl(
                             : [];
 
                         let stepId = job.current_step_id;
-                        let stepContext = job.context;
+                        const stepContext = job.context;
 
                         // If no current step, initialize the flow
                         if (!stepId) {
@@ -107,7 +116,7 @@ export function createWorkerServiceImpl(
                         'abort',
                         () => {
                             clearTimeout(timer);
-                            reject(context.signal.reason);
+                            reject(new Error(context.signal.reason as string));
                         },
                         { once: true },
                     );
@@ -119,14 +128,21 @@ export function createWorkerServiceImpl(
             // Persist any logs sent by the worker
             if (request.logsJson) {
                 try {
-                    const entries = JSON.parse(request.logsJson) as Array<{ level: string; message: string; metadata?: unknown }>;
+                    const entries = JSON.parse(request.logsJson) as Array<{
+                        level: string;
+                        message: string;
+                        metadata?: unknown;
+                    }>;
                     if (entries.length > 0) {
-                        await logService.appendLogs(request.jobId, entries.map((e) => ({
-                            step_id: request.stepId || null,
-                            level: e.level,
-                            message: e.message,
-                            metadata: e.metadata,
-                        })));
+                        await logService.appendLogs(
+                            request.jobId,
+                            entries.map((e) => ({
+                                step_id: request.stepId || null,
+                                level: e.level,
+                                message: e.message,
+                                metadata: e.metadata,
+                            })),
+                        );
                     }
                 } catch {
                     // Ignore malformed logs_json
@@ -139,7 +155,7 @@ export function createWorkerServiceImpl(
                 if (!agent) {
                     return { accepted: false };
                 }
-                const result = request.resultJson ? JSON.parse(request.resultJson) as unknown : null;
+                const result = request.resultJson ? (JSON.parse(request.resultJson) as unknown) : null;
                 await jobService.processStepResult(
                     request.jobId,
                     request.agentId,
@@ -150,7 +166,7 @@ export function createWorkerServiceImpl(
                     agent.activities,
                 );
             } else if (request.success) {
-                const result = request.resultJson ? JSON.parse(request.resultJson) as unknown : null;
+                const result = request.resultJson ? (JSON.parse(request.resultJson) as unknown) : null;
                 await jobService.completeJob(request.jobId, request.agentId, result);
             } else {
                 await jobService.failJob(request.jobId, request.agentId, request.error);

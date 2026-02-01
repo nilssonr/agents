@@ -1,6 +1,7 @@
 import type { AgentRepository } from '../agents/agent-repository.js';
 import type { FlowService } from '../flows/flow-service.js';
 import type { Metrics } from '../metrics/metrics.js';
+
 import type { JobRepository, JobRow } from './job-repository.js';
 
 /** High-level operations on jobs: listing, claiming, completion, and failure reporting. */
@@ -73,7 +74,10 @@ export function createJobService(
                 const transition = flows.handleStepSuccess(activities, stepId, result, job.context);
                 const contextSize = Buffer.byteLength(JSON.stringify(transition.updatedContext), 'utf8');
                 if (contextSize > maxContextSizeBytes) {
-                    await jobs.fail(jobId, `Flow context exceeded maximum size (${String(contextSize)} > ${String(maxContextSizeBytes)} bytes)`);
+                    await jobs.fail(
+                        jobId,
+                        `Flow context exceeded maximum size (${String(contextSize)} > ${String(maxContextSizeBytes)} bytes)`,
+                    );
                     await onJobFailure(agentId);
                     return;
                 }

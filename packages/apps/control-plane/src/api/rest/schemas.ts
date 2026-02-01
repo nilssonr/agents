@@ -4,20 +4,27 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 /** Schema for the POST /agents request body. */
 export const createAgentSchema = z.object({
     name: z.string().min(1, 'name is required'),
-    activities: z.array(z.object({
-        type: z.string().min(1),
-        id: z.string().optional(),
-        params: z.unknown().optional(),
-        maxRetries: z.number().int().nonnegative().optional(),
-        onError: z.record(z.string()).optional(),
-    })).optional().default([]),
+    activities: z
+        .array(
+            z.object({
+                type: z.string().min(1),
+                id: z.string().optional(),
+                params: z.unknown().optional(),
+                maxRetries: z.number().int().nonnegative().optional(),
+                onError: z.record(z.string()).optional(),
+            }),
+        )
+        .optional()
+        .default([]),
     failure_threshold: z.number().int().positive().optional().default(3),
 });
 
 /** Schema for the POST /agents/:id/invoke request body. */
-export const invokeAgentSchema = z.object({
-    payload: z.unknown().optional().default(null),
-}).passthrough();
+export const invokeAgentSchema = z
+    .object({
+        payload: z.unknown().optional().default(null),
+    })
+    .passthrough();
 
 /** Schema for the GET /agents/:id/jobs query string. */
 export const jobsQuerySchema = z.object({
@@ -85,13 +92,20 @@ export const readyErrorSchema = z.object({
 });
 
 /** Converts a Zod schema to JSON Schema suitable for Fastify route definitions. */
-export function toJsonSchema(schema: z.ZodType) {
-    const { $schema, ...rest } = zodToJsonSchema(schema, { target: 'jsonSchema7' }) as Record<string, unknown>;
+export function toJsonSchema(schema: z.ZodType): Record<string, unknown> {
+    const { $schema: _$schema, ...rest } = zodToJsonSchema(schema, { target: 'jsonSchema7' }) as Record<
+        string,
+        unknown
+    >;
     return rest;
 }
 
 /** Creates an RFC 7807 Problem Details response object. */
-export function createProblemDetail(status: number, title: string, detail: string) {
+export function createProblemDetail(
+    status: number,
+    title: string,
+    detail: string,
+): { type: string; title: string; status: number; detail: string } {
     return {
         type: 'about:blank',
         title,
@@ -106,7 +120,7 @@ export function validateBody<T>(schema: z.ZodType<T>, body: unknown): T {
         return schema.parse(body);
     } catch (err) {
         if (err instanceof z.ZodError) {
-            const details = err.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+            const details = err.errors.map((e) => `${e.path.join('.')}: ${e.message}`);
             const wrapped = new Error(`Validation failed: ${details.join('; ')}`);
             wrapped.name = 'ValidationError';
             throw wrapped;

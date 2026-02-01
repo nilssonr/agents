@@ -6,8 +6,8 @@ describe('parseFlowSteps', () => {
     it('parses a single step with auto-generated ID', () => {
         const steps = parseFlowSteps([{ type: 'noop' }]);
         expect(steps).toHaveLength(1);
-        expect(steps[0]!.id).toBe('step_0');
-        expect(steps[0]!.type).toBe('noop');
+        expect(steps[0].id).toBe('step_0');
+        expect(steps[0].type).toBe('noop');
     });
 
     it('parses multiple steps with explicit IDs', () => {
@@ -16,8 +16,8 @@ describe('parseFlowSteps', () => {
             { id: 'transform', type: 'map', params: { field: 'data' } },
         ]);
         expect(steps).toHaveLength(2);
-        expect(steps[0]!.id).toBe('fetch');
-        expect(steps[1]!.id).toBe('transform');
+        expect(steps[0].id).toBe('fetch');
+        expect(steps[1].id).toBe('transform');
     });
 
     it('auto-generates IDs for steps without them', () => {
@@ -45,11 +45,9 @@ describe('parseFlowSteps', () => {
     });
 
     it('throws on bad onError reference', () => {
-        expect(() =>
-            parseFlowSteps([
-                { id: 'a', type: 'x', onError: { default: 'nonexistent' } },
-            ]),
-        ).toThrow("references unknown step 'nonexistent'");
+        expect(() => parseFlowSteps([{ id: 'a', type: 'x', onError: { default: 'nonexistent' } }])).toThrow(
+            "references unknown step 'nonexistent'",
+        );
     });
 
     it('accepts valid onError references', () => {
@@ -57,7 +55,7 @@ describe('parseFlowSteps', () => {
             { id: 'a', type: 'x', onError: { default: 'b' } },
             { id: 'b', type: 'error-handler' },
         ]);
-        expect(steps[0]!.onError).toEqual({ default: 'b' });
+        expect(steps[0].onError).toEqual({ default: 'b' });
     });
 });
 

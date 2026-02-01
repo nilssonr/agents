@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { describe, expect, it, vi } from 'vitest';
 
 import { createActivityLogger } from './activity-logger.js';
@@ -5,11 +6,7 @@ import { createHttpRequestActivity, httpActivityParamsSchema } from './http-requ
 
 const logger = createActivityLogger();
 
-function mockFetch(response: {
-    status?: number;
-    headers?: Record<string, string>;
-    body?: unknown;
-}): typeof fetch {
+function mockFetch(response: { status?: number; headers?: Record<string, string>; body?: unknown }): typeof fetch {
     const { status = 200, headers = {}, body = '' } = response;
     const isJson = typeof body === 'object';
     const responseHeaders = new Headers({
@@ -17,13 +14,14 @@ function mockFetch(response: {
         ...(isJson ? { 'content-type': 'application/json' } : {}),
     });
 
-    return vi.fn<typeof fetch>().mockResolvedValue({
+    const mockFn: typeof fetch = vi.fn<typeof fetch>().mockResolvedValue({
         status,
         ok: status >= 200 && status < 300,
         headers: responseHeaders,
         json: async () => body,
         text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
     } as Response);
+    return mockFn;
 }
 
 describe('httpActivityParamsSchema', () => {
@@ -127,8 +125,8 @@ describe('createHttpRequestActivity', () => {
         expect(fetchFn).toHaveBeenCalledWith(
             'https://example.com',
             expect.objectContaining({
-                headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
-            }),
+                headers: expect.objectContaining({ 'Content-Type': 'application/json' }) as Record<string, string>,
+            }) as RequestInit,
         );
     });
 
@@ -170,7 +168,9 @@ describe('createHttpRequestActivity', () => {
         const fetchFn = vi.fn<typeof fetch>().mockImplementation(
             (_url, init) =>
                 new Promise((_resolve, reject) => {
-                    init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+                    init?.signal?.addEventListener('abort', () => {
+                        reject(new DOMException('Aborted', 'AbortError'));
+                    });
                 }),
         );
         const activity = createHttpRequestActivity(fetchFn);

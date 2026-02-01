@@ -77,43 +77,43 @@ index.ts           # Creates the app, starts it, handles process signals
 
 ### Control-plane features
 
-| Feature | Location | Description |
-|---------|----------|-------------|
-| **agents** | `control-plane/src/features/agents/` | Agent CRUD, invocation, failure tracking (auto-pause at threshold), restart |
-| **jobs** | `control-plane/src/features/jobs/` | Job lifecycle: claim, complete, fail, multi-step routing via flow service, stale job reaping, context size limits |
-| **flows** | `control-plane/src/features/flows/` | Multi-step orchestration: step parsing, success/failure transitions, retry logic, error handlers |
-| **logs** | `control-plane/src/features/logs/` | Batch append and retrieval of structured job execution logs |
-| **triggers** | `control-plane/src/features/triggers/` | Cron and webhook trigger definitions attached to agents |
-| **scheduler** | `control-plane/src/features/scheduler/` | Polling-based cron scheduler that evaluates triggers and invokes agents; persists `last_fired_at` to database |
-| **metrics** | `control-plane/src/features/metrics/` | Prometheus metrics (prom-client): job counters/histogram/gauge, scheduler ticks, gRPC assignments |
+| Feature       | Location                                | Description                                                                                                       |
+| ------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **agents**    | `control-plane/src/features/agents/`    | Agent CRUD, invocation, failure tracking (auto-pause at threshold), restart                                       |
+| **jobs**      | `control-plane/src/features/jobs/`      | Job lifecycle: claim, complete, fail, multi-step routing via flow service, stale job reaping, context size limits |
+| **flows**     | `control-plane/src/features/flows/`     | Multi-step orchestration: step parsing, success/failure transitions, retry logic, error handlers                  |
+| **logs**      | `control-plane/src/features/logs/`      | Batch append and retrieval of structured job execution logs                                                       |
+| **triggers**  | `control-plane/src/features/triggers/`  | Cron and webhook trigger definitions attached to agents                                                           |
+| **scheduler** | `control-plane/src/features/scheduler/` | Polling-based cron scheduler that evaluates triggers and invokes agents; persists `last_fired_at` to database     |
+| **metrics**   | `control-plane/src/features/metrics/`   | Prometheus metrics (prom-client): job counters/histogram/gauge, scheduler ticks, gRPC assignments                 |
 
 ### Worker features
 
-| Feature | Location | Description |
-|---------|----------|-------------|
+| Feature        | Location                          | Description                                                                                                       |
+| -------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | **activities** | `worker/src/features/activities/` | Activity registry with built-in activities: `noop`, `http-request`, `log`; exposes `listNames()` for capabilities |
-| **metrics** | `worker/src/features/metrics/` | Prometheus metrics: activity totals/duration, job totals/duration, reconnects counter, connected gauge |
+| **metrics**    | `worker/src/features/metrics/`    | Prometheus metrics: activity totals/duration, job totals/duration, reconnects counter, connected gauge            |
 
 ### Web app (`packages/apps/web`)
 
 React management UI using Vite, Tailwind CSS, shadcn/ui, TanStack Router, and TanStack React Query.
 
-| Feature | Location | Description |
-|---------|----------|-------------|
-| **hooks** | `web/src/hooks/` | React Query hooks: `useAgents`, `useAgent`, `useCreateAgent`, `useDeleteAgent`, `useInvokeAgent`, `useRestartAgent`, `useAgentJobs`, `useJobLogs`, `useHealth` |
-| **routes** | `web/src/routes/` | Dashboard (`/`), agent list (`/agents`), agent detail (`/agents/$agentId`), job detail (`/jobs/$jobId`) |
-| **layout** | `web/src/components/layout/` | Sidebar navigation + app shell |
-| **ui** | `web/src/components/ui/` | shadcn/ui components: button, card, badge, dialog, input, table, textarea, skeleton, separator |
+| Feature    | Location                     | Description                                                                                                                                                    |
+| ---------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **hooks**  | `web/src/hooks/`             | React Query hooks: `useAgents`, `useAgent`, `useCreateAgent`, `useDeleteAgent`, `useInvokeAgent`, `useRestartAgent`, `useAgentJobs`, `useJobLogs`, `useHealth` |
+| **routes** | `web/src/routes/`            | Dashboard (`/`), agent list (`/agents`), agent detail (`/agents/$agentId`), job detail (`/jobs/$jobId`)                                                        |
+| **layout** | `web/src/components/layout/` | Sidebar navigation + app shell                                                                                                                                 |
+| **ui**     | `web/src/components/ui/`     | shadcn/ui components: button, card, badge, dialog, input, table, textarea, skeleton, separator                                                                 |
 
 ### SDK (`packages/libs/sdk`)
 
 Typed OpenAPI client generated from the control-plane spec.
 
-| File | Description |
-|------|-------------|
-| `openapi.json` | Exported OpenAPI 3.1 spec from control-plane |
-| `src/generated/api.d.ts` | TypeScript types generated by `openapi-typescript` |
-| `src/client.ts` | `createClient(options)` factory wrapping `openapi-fetch` |
+| File                     | Description                                              |
+| ------------------------ | -------------------------------------------------------- |
+| `openapi.json`           | Exported OpenAPI 3.1 spec from control-plane             |
+| `src/generated/api.d.ts` | TypeScript types generated by `openapi-typescript`       |
+| `src/client.ts`          | `createClient(options)` factory wrapping `openapi-fetch` |
 
 ### Database tables
 
@@ -203,33 +203,33 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 
 ### Control-plane environment variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
-| `DB_POOL_MIN` | No | 2 | Minimum pool connections |
-| `DB_POOL_MAX` | No | 10 | Maximum pool connections |
-| `DB_CONNECTION_TIMEOUT_MS` | No | 5000 | Connection acquire timeout (ms) |
-| `DB_IDLE_TIMEOUT_MS` | No | 30000 | Idle connection timeout (ms) |
-| `HTTP_PORT` | No | — | REST server port |
-| `GRPC_PORT` | No | — | gRPC server port |
-| `CRON_INTERVAL_MS` | No | 60000 | Scheduler tick interval (ms) |
-| `JOB_REAPER_TTL_MS` | No | 300000 | Time before a running job is considered stuck (ms) |
-| `JOB_REAPER_INTERVAL_MS` | No | 60000 | Job reaper tick interval (ms) |
-| `GRPC_POLL_INTERVAL_MS` | No | 1000 | Job polling interval (ms) |
-| `METRICS_PORT` | No | 9090 | Prometheus metrics HTTP server port |
-| `MAX_CONTEXT_SIZE_BYTES` | No | 1048576 | Maximum flow context size in bytes (1 MB default) |
-| `CORS_ORIGIN` | No | — | Allowed CORS origin (enables @fastify/cors when set) |
+| Variable                   | Required | Default | Description                                          |
+| -------------------------- | -------- | ------- | ---------------------------------------------------- |
+| `DATABASE_URL`             | Yes      | —       | PostgreSQL connection string                         |
+| `DB_POOL_MIN`              | No       | 2       | Minimum pool connections                             |
+| `DB_POOL_MAX`              | No       | 10      | Maximum pool connections                             |
+| `DB_CONNECTION_TIMEOUT_MS` | No       | 5000    | Connection acquire timeout (ms)                      |
+| `DB_IDLE_TIMEOUT_MS`       | No       | 30000   | Idle connection timeout (ms)                         |
+| `HTTP_PORT`                | No       | —       | REST server port                                     |
+| `GRPC_PORT`                | No       | —       | gRPC server port                                     |
+| `CRON_INTERVAL_MS`         | No       | 60000   | Scheduler tick interval (ms)                         |
+| `JOB_REAPER_TTL_MS`        | No       | 300000  | Time before a running job is considered stuck (ms)   |
+| `JOB_REAPER_INTERVAL_MS`   | No       | 60000   | Job reaper tick interval (ms)                        |
+| `GRPC_POLL_INTERVAL_MS`    | No       | 1000    | Job polling interval (ms)                            |
+| `METRICS_PORT`             | No       | 9090    | Prometheus metrics HTTP server port                  |
+| `MAX_CONTEXT_SIZE_BYTES`   | No       | 1048576 | Maximum flow context size in bytes (1 MB default)    |
+| `CORS_ORIGIN`              | No       | —       | Allowed CORS origin (enables @fastify/cors when set) |
 
 ### Worker environment variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `GRPC_ADDRESS` | Yes | — | Control-plane gRPC endpoint |
-| `WORKER_ID` | No | `worker-{timestamp}` | Unique worker identifier |
-| `ACTIVITY_TIMEOUT_MS` | No | 60000 | Max time for a single activity execution (ms) |
-| `SHUTDOWN_GRACE_MS` | No | 10000 | Grace period for in-flight work on shutdown (ms) |
-| `METRICS_PORT` | No | 9090 | Worker metrics HTTP server port |
-| `WORKER_CONCURRENCY` | No | 1 | Max concurrent activity executions |
+| Variable              | Required | Default              | Description                                      |
+| --------------------- | -------- | -------------------- | ------------------------------------------------ |
+| `GRPC_ADDRESS`        | Yes      | —                    | Control-plane gRPC endpoint                      |
+| `WORKER_ID`           | No       | `worker-{timestamp}` | Unique worker identifier                         |
+| `ACTIVITY_TIMEOUT_MS` | No       | 60000                | Max time for a single activity execution (ms)    |
+| `SHUTDOWN_GRACE_MS`   | No       | 10000                | Grace period for in-flight work on shutdown (ms) |
+| `METRICS_PORT`        | No       | 9090                 | Worker metrics HTTP server port                  |
+| `WORKER_CONCURRENCY`  | No       | 1                    | Max concurrent activity executions               |
 
 ## Code style
 
@@ -252,4 +252,4 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 
 ## Verification
 
-Always run `pnpm build && pnpm test` after changes. Currently 172 tests across 33 test files (166 backend + 6 web).
+Always run `pnpm build && pnpm lint && pnpm format:check && pnpm test` after changes. Currently 172 tests across 33 test files (166 backend + 6 web).

@@ -29,7 +29,9 @@ export function useCreateAgent() {
             const { data } = await apiClient.POST('/agents', { body });
             return data;
         },
-        onSuccess: () => { void qc.invalidateQueries({ queryKey: ['agents'] }); },
+        onSuccess: () => {
+            void qc.invalidateQueries({ queryKey: ['agents'] });
+        },
     });
 }
 
@@ -39,7 +41,9 @@ export function useDeleteAgent() {
         mutationFn: async (id: string) => {
             await apiClient.DELETE('/agents/{id}', { params: { path: { id } } });
         },
-        onSuccess: () => { void qc.invalidateQueries({ queryKey: ['agents'] }); },
+        onSuccess: () => {
+            void qc.invalidateQueries({ queryKey: ['agents'] });
+        },
     });
 }
 
@@ -53,7 +57,9 @@ export function useInvokeAgent() {
             });
             return data;
         },
-        onSuccess: () => { void qc.invalidateQueries({ queryKey: ['agents'] }); },
+        onSuccess: () => {
+            void qc.invalidateQueries({ queryKey: ['agents'] });
+        },
     });
 }
 
@@ -64,6 +70,8 @@ export function useRestartAgent() {
             const { data } = await apiClient.POST('/agents/{id}/restart', { params: { path: { id } } });
             return data;
         },
-        onSuccess: () => { void qc.invalidateQueries({ queryKey: ['agents'] }); },
+        onSuccess: () => {
+            void qc.invalidateQueries({ queryKey: ['agents'] });
+        },
     });
 }

@@ -6,7 +6,15 @@ export type ValueSource<T> = { type: 'literal'; value: T } | { type: 'context'; 
 /**
  * Creates a Zod schema for a {@link ValueSource} whose literal branch validates against `innerSchema`.
  */
-export function valueSourceSchema<T extends ZodTypeAny>(innerSchema: T) {
+export function valueSourceSchema<T extends ZodTypeAny>(
+    innerSchema: T,
+): z.ZodDiscriminatedUnion<
+    'type',
+    [
+        z.ZodObject<{ type: z.ZodLiteral<'literal'>; value: T }>,
+        z.ZodObject<{ type: z.ZodLiteral<'context'>; ref: z.ZodString }>,
+    ]
+> {
     return z.discriminatedUnion('type', [
         z.object({ type: z.literal('literal'), value: innerSchema }),
         z.object({ type: z.literal('context'), ref: z.string() }),

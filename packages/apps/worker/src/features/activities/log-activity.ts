@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { z } from 'zod';
 
-import { resolveValue, valueSourceSchema } from './value-source.js';
 import type { ActivityFn } from './activity-types.js';
+import { resolveValue, valueSourceSchema } from './value-source.js';
 
 const LOG_LEVELS = ['info', 'warn', 'error'] as const;
 
@@ -16,12 +17,10 @@ export const logActivityParamsSchema = z.object({
  * Useful as an explicit `log` step in multi-step flows.
  */
 export function createLogActivity(): ActivityFn {
-    return async (_params: unknown, _payload: unknown, context: unknown, logger) => {
+    return async (_params: unknown, _payload: unknown, context: unknown, logger): Promise<{ logged: boolean }> => {
         const parsed = logActivityParamsSchema.parse(_params);
-        const message = resolveValue(parsed.message, context) as string;
-        const level = parsed.level
-            ? (resolveValue(parsed.level, context) as 'info' | 'warn' | 'error')
-            : 'info';
+        const message = resolveValue(parsed.message, context);
+        const level = parsed.level ? resolveValue(parsed.level, context) : 'info';
         logger[level](message);
         return { logged: true };
     };

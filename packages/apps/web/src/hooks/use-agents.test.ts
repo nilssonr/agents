@@ -3,7 +3,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createTestWrapper } from '../test-utils';
 
-const agent = { id: '1', name: 'test-agent', status: 'active', activities: [], failure_threshold: 3, failure_count: 0, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' };
+const agent = {
+    id: '1',
+    name: 'test-agent',
+    status: 'active',
+    activities: [],
+    failure_threshold: 3,
+    failure_count: 0,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+};
 
 vi.mock('@/api-client', () => ({
     apiClient: {

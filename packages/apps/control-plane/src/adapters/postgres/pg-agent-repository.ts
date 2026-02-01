@@ -3,7 +3,9 @@ import type { Pool } from 'pg';
 import * as db from '../../db/agents_sql.js';
 import type { AgentRepository, AgentRow } from '../../features/agents/agent-repository.js';
 
-function toAgentRow(row: db.CreateAgentRow | db.GetAgentRow | db.ListAgentsRow | db.IncrementFailureCountRow): AgentRow {
+function toAgentRow(
+    row: db.CreateAgentRow | db.GetAgentRow | db.ListAgentsRow | db.IncrementFailureCountRow,
+): AgentRow {
     return {
         id: row.id,
         name: row.name,

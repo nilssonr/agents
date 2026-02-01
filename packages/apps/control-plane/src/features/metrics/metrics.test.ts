@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { Registry } from 'prom-client';
+import { describe, expect, it } from 'vitest';
 
 import { createMetrics } from './metrics.js';
 

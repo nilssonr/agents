@@ -1,19 +1,19 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { createServer, createChannel, createClient } from 'nice-grpc';
-import type { Server, ServiceImplementation } from 'nice-grpc';
-
 import { WorkerServiceDefinition } from '@agents/contracts';
 import type { WorkerServiceClient } from '@agents/contracts';
+import { createServer, createChannel, createClient } from 'nice-grpc';
+import type { Server, ServiceImplementation } from 'nice-grpc';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 
 import { createAgentService } from '../../features/agents/agent-service.js';
-import { createJobService } from '../../features/jobs/job-service.js';
-import { createFlowService } from '../../features/flows/flow-service.js';
+import type { AgentService } from '../../features/agents/agent-service.js';
 import { createFakeAgentRepository } from '../../features/agents/fake-agent-repository.js';
+import { createFlowService } from '../../features/flows/flow-service.js';
 import { createFakeJobRepository } from '../../features/jobs/fake-job-repository.js';
+import { createJobService } from '../../features/jobs/job-service.js';
+import type { JobService } from '../../features/jobs/job-service.js';
 import { createFakeLogRepository } from '../../features/logs/fake-log-repository.js';
 import { createLogService } from '../../features/logs/log-service.js';
-import type { AgentService } from '../../features/agents/agent-service.js';
-import type { JobService } from '../../features/jobs/job-service.js';
+
 import { createWorkerServiceImpl } from './worker-service-impl.js';
 
 describe('WorkerService gRPC', () => {
@@ -29,15 +29,19 @@ describe('WorkerService gRPC', () => {
         jobRepo = createFakeJobRepository();
         agentService = createAgentService(agentRepo, jobRepo);
         const flowService = createFlowService();
-        jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService);
+        jobService = createJobService(
+            jobRepo,
+            agentRepo,
+            (agentId) => agentService.handleJobFailure(agentId),
+            flowService,
+        );
 
         const logService = createLogService(createFakeLogRepository());
-        const impl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, logService, { pollIntervalMs: 50 });
+        const impl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, logService, {
+            pollIntervalMs: 50,
+        });
         server = createServer();
-        server.add(
-            WorkerServiceDefinition,
-            impl as unknown as ServiceImplementation<typeof WorkerServiceDefinition>,
-        );
+        server.add(WorkerServiceDefinition, impl as unknown as ServiceImplementation<typeof WorkerServiceDefinition>);
         port = await server.listen('127.0.0.1:0');
         const channel = createChannel(`127.0.0.1:${String(port)}`);
         client = createClient(WorkerServiceDefinition, channel);
@@ -114,10 +118,15 @@ describe('WorkerService gRPC', () => {
 
         // Worker with only 'log' capability should not receive http-request jobs
         const abortController = new AbortController();
-        const stream = client.subscribeToJobs({ workerId: 'w1', capabilities: ['log'] }, { signal: abortController.signal });
+        const stream = client.subscribeToJobs(
+            { workerId: 'w1', capabilities: ['log'] },
+            { signal: abortController.signal },
+        );
 
         const assignments: unknown[] = [];
-        const timeout = setTimeout(() => abortController.abort(), 200);
+        const timeout = setTimeout(() => {
+            abortController.abort();
+        }, 200);
         try {
             for await (const assignment of stream) {
                 assignments.push(assignment);
@@ -174,11 +183,12 @@ describe('WorkerService gRPC', () => {
         }
 
         expect(firstAssignment).toBeDefined();
-        expect(firstAssignment!.stepId).toBe('fetch');
+        const assignment = firstAssignment as { stepId: string; jobId: string };
+        expect(assignment.stepId).toBe('fetch');
 
         // Report success with next step
         await client.reportJobResult({
-            jobId: firstAssignment!.jobId as string,
+            jobId: assignment.jobId,
             agentId: agent.id,
             success: true,
             resultJson: JSON.stringify({ next: 'transform', data: 'fetched' }),
@@ -189,6 +199,6 @@ describe('WorkerService gRPC', () => {
         // Job should now be pending with step_id = transform
         const pendingJobs = await jobService.getJobsForAgent(agent.id, 'pending');
         expect(pendingJobs).toHaveLength(1);
-        expect(pendingJobs[0]!.current_step_id).toBe('transform');
+        expect(pendingJobs[0].current_step_id).toBe('transform');
     });
 });
