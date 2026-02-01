@@ -29,6 +29,7 @@ message JobResult {
     string result_json = 4;
     string error = 5;
     string step_id = 6;
+    string logs_json = 7;
 }
 
 message JobAck {

@@ -10,6 +10,8 @@ import { createJobService } from '../../features/jobs/job-service.js';
 import { createFlowService } from '../../features/flows/flow-service.js';
 import { createFakeAgentRepository } from '../../features/agents/fake-agent-repository.js';
 import { createFakeJobRepository } from '../../features/jobs/fake-job-repository.js';
+import { createFakeLogRepository } from '../../features/logs/fake-log-repository.js';
+import { createLogService } from '../../features/logs/log-service.js';
 import type { AgentService } from '../../features/agents/agent-service.js';
 import type { JobService } from '../../features/jobs/job-service.js';
 import { createWorkerServiceImpl } from './worker-service-impl.js';
@@ -29,7 +31,8 @@ describe('WorkerService gRPC', () => {
         const flowService = createFlowService();
         jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService);
 
-        const impl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, { pollIntervalMs: 50 });
+        const logService = createLogService(createFakeLogRepository());
+        const impl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, logService, { pollIntervalMs: 50 });
         server = createServer();
         server.add(
             WorkerServiceDefinition,

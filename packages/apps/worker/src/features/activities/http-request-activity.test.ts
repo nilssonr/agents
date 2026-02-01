@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { createActivityLogger } from './activity-logger.js';
 import { createHttpRequestActivity, httpActivityParamsSchema } from './http-request-activity.js';
+
+const logger = createActivityLogger();
 
 function mockFetch(response: {
     status?: number;
@@ -58,6 +61,7 @@ describe('createHttpRequestActivity', () => {
             },
             null,
             {},
+            logger,
         );
 
         expect(fetchFn).toHaveBeenCalledWith('https://example.com/api', expect.objectContaining({ method: 'GET' }));
@@ -76,6 +80,7 @@ describe('createHttpRequestActivity', () => {
             },
             null,
             { endpoint: 'https://example.com/submit', data: { key: 'value' } },
+            logger,
         );
 
         expect(fetchFn).toHaveBeenCalledWith(
@@ -98,6 +103,7 @@ describe('createHttpRequestActivity', () => {
             },
             null,
             {},
+            logger,
         );
 
         expect(result).toMatchObject({ body: { result: 42 } });
@@ -115,6 +121,7 @@ describe('createHttpRequestActivity', () => {
             },
             null,
             {},
+            logger,
         );
 
         expect(fetchFn).toHaveBeenCalledWith(
@@ -136,6 +143,7 @@ describe('createHttpRequestActivity', () => {
             },
             null,
             {},
+            logger,
         );
 
         expect(result).toMatchObject({ status: 404 });
@@ -153,6 +161,7 @@ describe('createHttpRequestActivity', () => {
                 },
                 null,
                 {},
+                logger,
             ),
         ).rejects.toThrow('Network error');
     });
@@ -175,6 +184,7 @@ describe('createHttpRequestActivity', () => {
                 },
                 null,
                 {},
+                logger,
             ),
         ).rejects.toThrow();
     });

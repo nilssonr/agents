@@ -7,6 +7,7 @@ import type { AgentService } from '../../features/agents/agent-service.js';
 import type { FlowService } from '../../features/flows/flow-service.js';
 import type { JobRepository } from '../../features/jobs/job-repository.js';
 import type { JobService } from '../../features/jobs/job-service.js';
+import type { LogService } from '../../features/logs/log-service.js';
 
 /** Configuration for the gRPC WorkerService server-side implementation. */
 export interface WorkerServiceOptions {
@@ -25,6 +26,7 @@ export function createWorkerServiceImpl(
     jobService: JobService,
     jobRepo: JobRepository,
     flowService: FlowService,
+    logService: LogService,
     options: WorkerServiceOptions,
 ): WorkerServiceImplementation {
     return {
@@ -99,6 +101,23 @@ export function createWorkerServiceImpl(
         },
 
         async reportJobResult(request: JobResult): Promise<DeepPartial<JobAck>> {
+            // Persist any logs sent by the worker
+            if (request.logsJson) {
+                try {
+                    const entries = JSON.parse(request.logsJson) as Array<{ level: string; message: string; metadata?: unknown }>;
+                    if (entries.length > 0) {
+                        await logService.appendLogs(request.jobId, entries.map((e) => ({
+                            step_id: request.stepId || null,
+                            level: e.level,
+                            message: e.message,
+                            metadata: e.metadata,
+                        })));
+                    }
+                } catch {
+                    // Ignore malformed logs_json
+                }
+            }
+
             if (request.stepId) {
                 // Flow-aware path
                 const agent = await agentService.getAgent(request.agentId);

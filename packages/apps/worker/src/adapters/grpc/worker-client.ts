@@ -1,6 +1,7 @@
 import type { WorkerServiceClient, JobAssignment } from '@agents/contracts';
 import { createLogger } from '@agents/logger';
 
+import { createActivityLogger } from '../../features/activities/activity-logger.js';
 import type { ActivityRegistry } from '../../features/activities/activity-registry.js';
 
 const logger = createLogger('worker-client');
@@ -76,15 +77,18 @@ async function processAssignment(
             resultJson: '',
             error: `Unknown activity type: ${assignment.activityType}`,
             stepId: assignment.stepId ?? '',
+            logsJson: '',
         });
         return;
     }
+
+    const activityLogger = createActivityLogger();
 
     try {
         const params = assignment.paramsJson ? JSON.parse(assignment.paramsJson) as unknown : {};
         const payload = assignment.payloadJson ? JSON.parse(assignment.payloadJson) as unknown : null;
         const context = assignment.contextJson ? JSON.parse(assignment.contextJson) as unknown : {};
-        const result = await activity(params, payload, context);
+        const result = await activity(params, payload, context, activityLogger);
         await client.reportJobResult({
             jobId: assignment.jobId,
             agentId: assignment.agentId,
@@ -92,6 +96,7 @@ async function processAssignment(
             resultJson: JSON.stringify(result),
             error: '',
             stepId: assignment.stepId ?? '',
+            logsJson: JSON.stringify(activityLogger.entries()),
         });
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
@@ -102,6 +107,7 @@ async function processAssignment(
             resultJson: '',
             error: errorMessage,
             stepId: assignment.stepId ?? '',
+            logsJson: JSON.stringify(activityLogger.entries()),
         });
     }
 }

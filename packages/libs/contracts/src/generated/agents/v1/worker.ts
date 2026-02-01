@@ -32,6 +32,7 @@ export interface JobResult {
   resultJson: string;
   error: string;
   stepId: string;
+  logsJson: string;
 }
 
 export interface JobAck {
@@ -305,7 +306,7 @@ export const JobAssignment: MessageFns<JobAssignment> = {
 };
 
 function createBaseJobResult(): JobResult {
-  return { jobId: "", agentId: "", success: false, resultJson: "", error: "", stepId: "" };
+  return { jobId: "", agentId: "", success: false, resultJson: "", error: "", stepId: "", logsJson: "" };
 }
 
 export const JobResult: MessageFns<JobResult> = {
@@ -327,6 +328,9 @@ export const JobResult: MessageFns<JobResult> = {
     }
     if (message.stepId !== "") {
       writer.uint32(50).string(message.stepId);
+    }
+    if (message.logsJson !== "") {
+      writer.uint32(58).string(message.logsJson);
     }
     return writer;
   },
@@ -386,6 +390,14 @@ export const JobResult: MessageFns<JobResult> = {
           message.stepId = reader.string();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.logsJson = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -419,6 +431,11 @@ export const JobResult: MessageFns<JobResult> = {
         : isSet(object.step_id)
         ? globalThis.String(object.step_id)
         : "",
+      logsJson: isSet(object.logsJson)
+        ? globalThis.String(object.logsJson)
+        : isSet(object.logs_json)
+        ? globalThis.String(object.logs_json)
+        : "",
     };
   },
 
@@ -442,6 +459,9 @@ export const JobResult: MessageFns<JobResult> = {
     if (message.stepId !== "") {
       obj.stepId = message.stepId;
     }
+    if (message.logsJson !== "") {
+      obj.logsJson = message.logsJson;
+    }
     return obj;
   },
 
@@ -456,6 +476,7 @@ export const JobResult: MessageFns<JobResult> = {
     message.resultJson = object.resultJson ?? "";
     message.error = object.error ?? "";
     message.stepId = object.stepId ?? "";
+    message.logsJson = object.logsJson ?? "";
     return message;
   },
 };

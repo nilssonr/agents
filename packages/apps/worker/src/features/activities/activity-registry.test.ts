@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { createActivityLogger } from './activity-logger.js';
 import { createActivityRegistry } from './activity-registry.js';
 
 describe('ActivityRegistry', () => {
@@ -8,11 +9,16 @@ describe('ActivityRegistry', () => {
         expect(registry.has('noop')).toBe(true);
     });
 
+    it('ships with log activity', () => {
+        const registry = createActivityRegistry();
+        expect(registry.has('log')).toBe(true);
+    });
+
     it('noop activity returns ok', async () => {
         const registry = createActivityRegistry();
         const noop = registry.get('noop');
         expect(noop).toBeDefined();
-        const result = await noop!({}, null, {});
+        const result = await noop!({}, null, {}, createActivityLogger());
         expect(result).toEqual({ ok: true });
     });
 

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 import { resolveValue, valueSourceSchema, type ValueSource } from './value-source.js';
-import type { ActivityFn } from './activity-registry.js';
+import type { ActivityFn } from './activity-types.js';
+import type { ActivityLogger } from './activity-logger.js';
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'] as const;
 
@@ -35,7 +36,7 @@ export interface HttpActivityResult {
  * @param fetchFn - Optional fetch implementation for testability (defaults to global `fetch`).
  */
 export function createHttpRequestActivity(fetchFn: typeof fetch = fetch): ActivityFn {
-    return async (_params: unknown, _payload: unknown, context: unknown): Promise<HttpActivityResult> => {
+    return async (_params: unknown, _payload: unknown, context: unknown, _logger: ActivityLogger): Promise<HttpActivityResult> => {
         const parsed = httpActivityParamsSchema.parse(_params);
 
         const method = resolveValue(parsed.method, context) as string;

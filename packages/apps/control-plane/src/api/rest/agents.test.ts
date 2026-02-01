@@ -7,6 +7,8 @@ import { createJobService } from '../../features/jobs/job-service.js';
 import { createFlowService } from '../../features/flows/flow-service.js';
 import { createFakeAgentRepository } from '../../features/agents/fake-agent-repository.js';
 import { createFakeJobRepository } from '../../features/jobs/fake-job-repository.js';
+import { createFakeLogRepository } from '../../features/logs/fake-log-repository.js';
+import { createLogService } from '../../features/logs/log-service.js';
 import type { AgentService } from '../../features/agents/agent-service.js';
 import type { JobService } from '../../features/jobs/job-service.js';
 
@@ -20,7 +22,8 @@ describe('Agent routes', () => {
         const jobRepo = createFakeJobRepository();
         agentService = createAgentService(agentRepo, jobRepo);
         jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, createFlowService());
-        app = buildRestServer({ agentService, jobService });
+        const logService = createLogService(createFakeLogRepository());
+        app = buildRestServer({ agentService, jobService, logService });
     });
 
     it('POST /agents creates an agent', async () => {

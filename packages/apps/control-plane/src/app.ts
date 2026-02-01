@@ -7,10 +7,12 @@ import { createMigrationRunner } from '@agents/migrations';
 
 import { createPgAgentRepository } from './adapters/postgres/pg-agent-repository.js';
 import { createPgJobRepository } from './adapters/postgres/pg-job-repository.js';
+import { createPgLogRepository } from './adapters/postgres/pg-log-repository.js';
 import { createPgTriggerRepository } from './adapters/postgres/pg-trigger-repository.js';
 import { createAgentService } from './features/agents/agent-service.js';
 import { createFlowService } from './features/flows/flow-service.js';
 import { createJobService } from './features/jobs/job-service.js';
+import { createLogService } from './features/logs/log-service.js';
 import { createCronScheduler } from './features/scheduler/cron-scheduler.js';
 import { startGrpcServer } from './api/grpc/server.js';
 import { createWorkerServiceImpl } from './api/grpc/worker-service-impl.js';
@@ -43,17 +45,19 @@ export function createApp(): App {
     const migrationRunner = createMigrationRunner(pool, { migrationsPath });
     const agentRepo = createPgAgentRepository(pool);
     const jobRepo = createPgJobRepository(pool);
+    const logRepo = createPgLogRepository(pool);
     const triggerRepo = createPgTriggerRepository(pool);
 
     // Features
     const flowService = createFlowService();
     const agentService = createAgentService(agentRepo, jobRepo);
     const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService);
+    const logService = createLogService(logRepo);
     const cronScheduler = createCronScheduler(triggerRepo, agentService, Number(config.cronIntervalMs));
 
     // API
-    const rest = buildRestServer({ agentService, jobService });
-    const workerImpl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, {
+    const rest = buildRestServer({ agentService, jobService, logService });
+    const workerImpl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, logService, {
         pollIntervalMs: Number(config.grpcPollIntervalMs),
     });
     const grpcServer = startGrpcServer(Number(config.grpcPort), workerImpl);

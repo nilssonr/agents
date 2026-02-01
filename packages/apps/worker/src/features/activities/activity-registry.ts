@@ -1,10 +1,12 @@
 import { createLogger } from '@agents/logger';
 
 import { createHttpRequestActivity } from './http-request-activity.js';
+import { createLogActivity } from './log-activity.js';
+import type { ActivityFn } from './activity-types.js';
+
+export type { ActivityFn } from './activity-types.js';
 
 const logger = createLogger('activity-registry');
-
-export type ActivityFn = (params: unknown, payload: unknown, context: unknown) => Promise<unknown>;
 
 /** A name-based lookup for activity functions that workers can execute. */
 export interface ActivityRegistry {
@@ -14,8 +16,8 @@ export interface ActivityRegistry {
 }
 
 /**
- * Creates an {@link ActivityRegistry} pre-loaded with a built-in `noop` activity.
- * Custom activities can be added via `register()`.
+ * Creates an {@link ActivityRegistry} pre-loaded with built-in activities:
+ * `noop`, `http-request`, and `log`. Custom activities can be added via `register()`.
  */
 export function createActivityRegistry(): ActivityRegistry {
     const activities = new Map<string, ActivityFn>();
@@ -32,12 +34,13 @@ export function createActivityRegistry(): ActivityRegistry {
         },
     };
 
-    registry.register('noop', async (_params, _payload, _context) => {
+    registry.register('noop', async (_params, _payload, _context, _logger) => {
         logger.info('noop activity executed');
         return { ok: true };
     });
 
     registry.register('http-request', createHttpRequestActivity());
+    registry.register('log', createLogActivity());
 
     return registry;
 }
