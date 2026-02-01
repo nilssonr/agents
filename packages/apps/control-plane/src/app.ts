@@ -9,6 +9,7 @@ import { createPgAgentRepository } from './adapters/postgres/pg-agent-repository
 import { createPgJobRepository } from './adapters/postgres/pg-job-repository.js';
 import { createPgTriggerRepository } from './adapters/postgres/pg-trigger-repository.js';
 import { createAgentService } from './features/agents/agent-service.js';
+import { createFlowService } from './features/flows/flow-service.js';
 import { createJobService } from './features/jobs/job-service.js';
 import { createCronScheduler } from './features/scheduler/cron-scheduler.js';
 import { startGrpcServer } from './api/grpc/server.js';
@@ -45,13 +46,14 @@ export function createApp(): App {
     const triggerRepo = createPgTriggerRepository(pool);
 
     // Features
+    const flowService = createFlowService();
     const agentService = createAgentService(agentRepo, jobRepo);
-    const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure);
+    const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService);
     const cronScheduler = createCronScheduler(triggerRepo, agentService, Number(config.cronIntervalMs));
 
     // API
     const rest = buildRestServer({ agentService, jobService });
-    const workerImpl = createWorkerServiceImpl(agentService, jobService, {
+    const workerImpl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, {
         pollIntervalMs: Number(config.grpcPollIntervalMs),
     });
     const grpcServer = startGrpcServer(Number(config.grpcPort), workerImpl);

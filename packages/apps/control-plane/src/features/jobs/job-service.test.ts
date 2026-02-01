@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 
 import { createFakeAgentRepository } from '../agents/fake-agent-repository.js';
+import { createFlowService } from '../flows/flow-service.js';
 import { createFakeJobRepository } from './fake-job-repository.js';
 import { createJobService } from './job-service.js';
 import type { JobService } from './job-service.js';
@@ -15,7 +16,7 @@ describe('JobService', () => {
         agentRepo = createFakeAgentRepository();
         jobRepo = createFakeJobRepository();
         onFailure = vi.fn().mockResolvedValue(undefined);
-        service = createJobService(jobRepo, agentRepo, onFailure);
+        service = createJobService(jobRepo, agentRepo, onFailure, createFlowService());
     });
 
     it('lists jobs for agent filtered by status', async () => {
@@ -70,5 +71,88 @@ describe('JobService', () => {
         expect(updatedJob?.status).toBe('failed');
         expect(updatedJob?.error).toBe('something broke');
         expect(onFailure).toHaveBeenCalledWith(agent.id);
+    });
+
+    describe('processStepResult', () => {
+        it('completes flow when step has no next', async () => {
+            const agent = await agentRepo.create('a', [{ id: 'a', type: 'noop' }], 3);
+            const job = await jobRepo.create(agent.id, null);
+            await jobRepo.claim(agent.id);
+
+            await service.processStepResult(
+                job.id, agent.id, 'a', true, { value: 42 }, undefined, agent.activities,
+            );
+
+            const updated = jobRepo.jobs.find((j) => j.id === job.id);
+            expect(updated?.status).toBe('completed');
+        });
+
+        it('advances to next step on success with next', async () => {
+            const activities = [
+                { id: 'a', type: 'fetch' },
+                { id: 'b', type: 'transform' },
+            ];
+            const agent = await agentRepo.create('a', activities, 3);
+            const job = await jobRepo.create(agent.id, null);
+            await jobRepo.claim(agent.id);
+
+            await service.processStepResult(
+                job.id, agent.id, 'a', true, { next: 'b', data: 1 }, undefined, activities,
+            );
+
+            const updated = jobRepo.jobs.find((j) => j.id === job.id);
+            expect(updated?.status).toBe('pending');
+            expect(updated?.current_step_id).toBe('b');
+            expect(updated?.context).toEqual({ a: { next: 'b', data: 1 } });
+        });
+
+        it('retries step on failure when under maxRetries', async () => {
+            const activities = [{ id: 'a', type: 'noop', maxRetries: 3 }];
+            const agent = await agentRepo.create('a', activities, 3);
+            const job = await jobRepo.create(agent.id, null);
+            await jobRepo.claim(agent.id);
+
+            await service.processStepResult(
+                job.id, agent.id, 'a', false, undefined, 'fail', activities,
+            );
+
+            const updated = jobRepo.jobs.find((j) => j.id === job.id);
+            expect(updated?.status).toBe('pending');
+            expect(updated?.step_retries).toBe(1);
+        });
+
+        it('routes to onError step on failure', async () => {
+            const activities = [
+                { id: 'a', type: 'noop', onError: { default: 'b' } },
+                { id: 'b', type: 'fallback' },
+            ];
+            const agent = await agentRepo.create('a', activities, 3);
+            const job = await jobRepo.create(agent.id, null);
+            await jobRepo.claim(agent.id);
+
+            await service.processStepResult(
+                job.id, agent.id, 'a', false, undefined, 'fail', activities,
+            );
+
+            const updated = jobRepo.jobs.find((j) => j.id === job.id);
+            expect(updated?.status).toBe('pending');
+            expect(updated?.current_step_id).toBe('b');
+        });
+
+        it('fails job when no recovery option', async () => {
+            const activities = [{ id: 'a', type: 'noop' }];
+            const agent = await agentRepo.create('a', activities, 3);
+            const job = await jobRepo.create(agent.id, null);
+            await jobRepo.claim(agent.id);
+
+            await service.processStepResult(
+                job.id, agent.id, 'a', false, undefined, 'boom', activities,
+            );
+
+            const updated = jobRepo.jobs.find((j) => j.id === job.id);
+            expect(updated?.status).toBe('failed');
+            expect(updated?.error).toBe('boom');
+            expect(onFailure).toHaveBeenCalledWith(agent.id);
+        });
     });
 });

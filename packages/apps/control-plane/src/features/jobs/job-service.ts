@@ -1,4 +1,5 @@
 import type { AgentRepository } from '../agents/agent-repository.js';
+import type { FlowService } from '../flows/flow-service.js';
 import type { JobRepository, JobRow } from './job-repository.js';
 
 /** High-level operations on jobs: listing, claiming, completion, and failure reporting. */
@@ -7,6 +8,15 @@ export interface JobService {
     claimNextJob(agentId: string): Promise<JobRow | null>;
     completeJob(jobId: string, agentId: string, result: unknown): Promise<void>;
     failJob(jobId: string, agentId: string, error: string): Promise<void>;
+    processStepResult(
+        jobId: string,
+        agentId: string,
+        stepId: string,
+        success: boolean,
+        result: unknown,
+        error: string | undefined,
+        activities: unknown,
+    ): Promise<void>;
 }
 
 /**
@@ -20,6 +30,7 @@ export function createJobService(
     jobs: JobRepository,
     agents: AgentRepository,
     onJobFailure: (agentId: string) => Promise<void>,
+    flows: FlowService,
 ): JobService {
     return {
         async getJobsForAgent(agentId, status): Promise<JobRow[]> {
@@ -38,6 +49,37 @@ export function createJobService(
         async failJob(jobId, agentId, error): Promise<void> {
             await jobs.fail(jobId, error);
             await onJobFailure(agentId);
+        },
+
+        async processStepResult(jobId, agentId, stepId, success, result, error, activities): Promise<void> {
+            const job = await jobs.getById(jobId);
+            if (!job) return;
+
+            if (success) {
+                const transition = flows.handleStepSuccess(activities, stepId, result, job.context);
+                if (transition.nextStepId) {
+                    await jobs.updateStep(jobId, transition.nextStepId, transition.updatedContext);
+                } else {
+                    await jobs.complete(jobId, transition.updatedContext);
+                    await agents.reset(agentId);
+                }
+            } else {
+                const transition = flows.handleStepFailure(
+                    activities,
+                    stepId,
+                    { message: error ?? 'unknown error' },
+                    job.step_retries,
+                    job.context,
+                );
+                if (transition.retry) {
+                    await jobs.incrementStepRetries(jobId);
+                } else if (transition.nextStepId) {
+                    await jobs.updateStep(jobId, transition.nextStepId, job.context);
+                } else {
+                    await jobs.fail(jobId, error ?? 'unknown error');
+                    await onJobFailure(agentId);
+                }
+            }
         },
     };
 }

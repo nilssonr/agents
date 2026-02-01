@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import type { FlowContext } from '../flows/flow-types.js';
 import type { JobRepository, JobRow } from './job-repository.js';
 
 /**
@@ -19,6 +20,9 @@ export function createFakeJobRepository(): JobRepository & { jobs: JobRow[] } {
                 payload,
                 result: null,
                 error: null,
+                current_step_id: null,
+                context: {},
+                step_retries: 0,
                 created_at: new Date(),
                 updated_at: new Date(),
             };
@@ -40,6 +44,8 @@ export function createFakeJobRepository(): JobRepository & { jobs: JobRow[] } {
             if (job) {
                 job.status = 'completed';
                 job.result = result;
+                job.current_step_id = null;
+                job.step_retries = 0;
                 job.updated_at = new Date();
             }
         },
@@ -50,6 +56,27 @@ export function createFakeJobRepository(): JobRepository & { jobs: JobRow[] } {
                 job.error = error;
                 job.updated_at = new Date();
             }
+        },
+        async getById(id): Promise<JobRow | null> {
+            return jobs.find((j) => j.id === id) ?? null;
+        },
+        async updateStep(id, stepId, context: FlowContext): Promise<void> {
+            const job = jobs.find((j) => j.id === id);
+            if (job) {
+                job.current_step_id = stepId;
+                job.context = context;
+                job.step_retries = 0;
+                job.status = 'pending';
+                job.updated_at = new Date();
+            }
+        },
+        async incrementStepRetries(id): Promise<JobRow | null> {
+            const job = jobs.find((j) => j.id === id);
+            if (!job) return null;
+            job.step_retries += 1;
+            job.status = 'pending';
+            job.updated_at = new Date();
+            return job;
         },
     };
 }

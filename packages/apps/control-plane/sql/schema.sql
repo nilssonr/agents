@@ -24,6 +24,9 @@ CREATE TABLE jobs (
     payload JSONB,
     result JSONB,
     error TEXT,
+    current_step_id TEXT,
+    context JSONB NOT NULL DEFAULT '{}',
+    step_retries INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

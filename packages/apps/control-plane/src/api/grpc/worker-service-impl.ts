@@ -4,6 +4,8 @@ import type { DeepPartial, JobAssignment, SubscribeRequest, JobResult, JobAck, W
 
 import type { AgentRow } from '../../features/agents/agent-repository.js';
 import type { AgentService } from '../../features/agents/agent-service.js';
+import type { FlowService } from '../../features/flows/flow-service.js';
+import type { JobRepository } from '../../features/jobs/job-repository.js';
 import type { JobService } from '../../features/jobs/job-service.js';
 
 /** Configuration for the gRPC WorkerService server-side implementation. */
@@ -21,6 +23,8 @@ export interface WorkerServiceOptions {
 export function createWorkerServiceImpl(
     agentService: AgentService,
     jobService: JobService,
+    jobRepo: JobRepository,
+    flowService: FlowService,
     options: WorkerServiceOptions,
 ): WorkerServiceImplementation {
     return {
@@ -38,13 +42,44 @@ export function createWorkerServiceImpl(
                         const activities = Array.isArray(agent.activities)
                             ? (agent.activities as Array<{ type?: string; params?: unknown }>)
                             : [];
-                        const activity = activities[0];
+
+                        let stepId = job.current_step_id;
+                        let stepContext = job.context;
+
+                        // If no current step, initialize the flow
+                        if (!stepId) {
+                            const initialStep = flowService.getInitialStep(activities);
+                            if (initialStep) {
+                                stepId = initialStep.id;
+                                await jobRepo.updateStep(job.id, stepId, stepContext);
+                            }
+                        }
+
+                        const step = stepId
+                            ? activities.find(
+                                  (a: Record<string, unknown>) =>
+                                      a.id === stepId || (activities.indexOf(a) === 0 && !a.id),
+                              )
+                            : activities[0];
+
+                        // Find the step by parsed flow steps for accurate params
+                        const { findStepById } = await import('../../features/flows/flow-parser.js');
+                        const { parseFlowSteps } = await import('../../features/flows/flow-parser.js');
+                        const parsedSteps = parseFlowSteps(activities);
+                        const currentStep = stepId ? findStepById(parsedSteps, stepId) : null;
+
                         yield {
                             jobId: job.id,
                             agentId: job.agent_id,
-                            activityType: activity?.type ?? 'noop',
-                            paramsJson: activity?.params ? JSON.stringify(activity.params) : '{}',
+                            activityType: currentStep?.type ?? step?.type ?? 'noop',
+                            paramsJson: currentStep?.params
+                                ? JSON.stringify(currentStep.params)
+                                : step?.params
+                                  ? JSON.stringify(step.params)
+                                  : '{}',
                             payloadJson: job.payload ? JSON.stringify(job.payload) : '',
+                            stepId: stepId ?? '',
+                            contextJson: JSON.stringify(stepContext),
                         };
                     }
                 }
@@ -64,7 +99,23 @@ export function createWorkerServiceImpl(
         },
 
         async reportJobResult(request: JobResult): Promise<DeepPartial<JobAck>> {
-            if (request.success) {
+            if (request.stepId) {
+                // Flow-aware path
+                const agent = await agentService.getAgent(request.agentId);
+                if (!agent) {
+                    return { accepted: false };
+                }
+                const result = request.resultJson ? JSON.parse(request.resultJson) as unknown : null;
+                await jobService.processStepResult(
+                    request.jobId,
+                    request.agentId,
+                    request.stepId,
+                    request.success,
+                    result,
+                    request.success ? undefined : request.error,
+                    agent.activities,
+                );
+            } else if (request.success) {
                 const result = request.resultJson ? JSON.parse(request.resultJson) as unknown : null;
                 await jobService.completeJob(request.jobId, request.agentId, result);
             } else {

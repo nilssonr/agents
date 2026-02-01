@@ -75,6 +75,7 @@ async function processAssignment(
             success: false,
             resultJson: '',
             error: `Unknown activity type: ${assignment.activityType}`,
+            stepId: assignment.stepId ?? '',
         });
         return;
     }
@@ -82,13 +83,15 @@ async function processAssignment(
     try {
         const params = assignment.paramsJson ? JSON.parse(assignment.paramsJson) as unknown : {};
         const payload = assignment.payloadJson ? JSON.parse(assignment.payloadJson) as unknown : null;
-        const result = await activity(params, payload);
+        const context = assignment.contextJson ? JSON.parse(assignment.contextJson) as unknown : {};
+        const result = await activity(params, payload, context);
         await client.reportJobResult({
             jobId: assignment.jobId,
             agentId: assignment.agentId,
             success: true,
             resultJson: JSON.stringify(result),
             error: '',
+            stepId: assignment.stepId ?? '',
         });
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
@@ -98,6 +101,7 @@ async function processAssignment(
             success: false,
             resultJson: '',
             error: errorMessage,
+            stepId: assignment.stepId ?? '',
         });
     }
 }

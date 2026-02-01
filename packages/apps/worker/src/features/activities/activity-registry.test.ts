@@ -12,7 +12,7 @@ describe('ActivityRegistry', () => {
         const registry = createActivityRegistry();
         const noop = registry.get('noop');
         expect(noop).toBeDefined();
-        const result = await noop!({}, null);
+        const result = await noop!({}, null, {});
         expect(result).toEqual({ ok: true });
     });
 

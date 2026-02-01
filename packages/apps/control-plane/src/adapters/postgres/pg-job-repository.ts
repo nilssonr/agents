@@ -1,9 +1,17 @@
 import type { Pool } from 'pg';
 
 import * as db from '../../db/jobs_sql.js';
+import type { FlowContext } from '../../features/flows/flow-types.js';
 import type { JobRepository, JobRow } from '../../features/jobs/job-repository.js';
 
-function toJobRow(row: db.CreateJobRow | db.ListJobsByAgentRow | db.ClaimJobRow): JobRow {
+type DbJobRow =
+    | db.CreateJobRow
+    | db.ListJobsByAgentRow
+    | db.ClaimJobRow
+    | db.GetJobByIdRow
+    | db.IncrementStepRetriesRow;
+
+function toJobRow(row: DbJobRow): JobRow {
     return {
         id: row.id,
         agent_id: row.agentId,
@@ -11,6 +19,9 @@ function toJobRow(row: db.CreateJobRow | db.ListJobsByAgentRow | db.ClaimJobRow)
         payload: row.payload,
         result: row.result,
         error: row.error,
+        current_step_id: row.currentStepId,
+        context: (row.context ?? {}) as FlowContext,
+        step_retries: row.stepRetries,
         created_at: row.createdAt,
         updated_at: row.updatedAt,
     };
@@ -47,6 +58,24 @@ export function createPgJobRepository(pool: Pool): JobRepository {
 
         async fail(id, error): Promise<void> {
             await db.failJob(pool, { id, error });
+        },
+
+        async getById(id): Promise<JobRow | null> {
+            const row = await db.getJobById(pool, { id });
+            return row ? toJobRow(row) : null;
+        },
+
+        async updateStep(id, stepId, context: FlowContext): Promise<void> {
+            await db.updateJobStep(pool, {
+                id,
+                currentStepId: stepId,
+                context: JSON.stringify(context),
+            });
+        },
+
+        async incrementStepRetries(id): Promise<JobRow | null> {
+            const row = await db.incrementStepRetries(pool, { id });
+            return row ? toJobRow(row) : null;
         },
     };
 }

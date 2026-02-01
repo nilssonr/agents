@@ -21,6 +21,8 @@ export interface JobAssignment {
   activityType: string;
   paramsJson: string;
   payloadJson: string;
+  stepId: string;
+  contextJson: string;
 }
 
 export interface JobResult {
@@ -29,6 +31,7 @@ export interface JobResult {
   success: boolean;
   resultJson: string;
   error: string;
+  stepId: string;
 }
 
 export interface JobAck {
@@ -118,7 +121,7 @@ export const SubscribeRequest: MessageFns<SubscribeRequest> = {
 };
 
 function createBaseJobAssignment(): JobAssignment {
-  return { jobId: "", agentId: "", activityType: "", paramsJson: "", payloadJson: "" };
+  return { jobId: "", agentId: "", activityType: "", paramsJson: "", payloadJson: "", stepId: "", contextJson: "" };
 }
 
 export const JobAssignment: MessageFns<JobAssignment> = {
@@ -137,6 +140,12 @@ export const JobAssignment: MessageFns<JobAssignment> = {
     }
     if (message.payloadJson !== "") {
       writer.uint32(42).string(message.payloadJson);
+    }
+    if (message.stepId !== "") {
+      writer.uint32(50).string(message.stepId);
+    }
+    if (message.contextJson !== "") {
+      writer.uint32(58).string(message.contextJson);
     }
     return writer;
   },
@@ -188,6 +197,22 @@ export const JobAssignment: MessageFns<JobAssignment> = {
           message.payloadJson = reader.string();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.stepId = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.contextJson = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -224,6 +249,16 @@ export const JobAssignment: MessageFns<JobAssignment> = {
         : isSet(object.payload_json)
         ? globalThis.String(object.payload_json)
         : "",
+      stepId: isSet(object.stepId)
+        ? globalThis.String(object.stepId)
+        : isSet(object.step_id)
+        ? globalThis.String(object.step_id)
+        : "",
+      contextJson: isSet(object.contextJson)
+        ? globalThis.String(object.contextJson)
+        : isSet(object.context_json)
+        ? globalThis.String(object.context_json)
+        : "",
     };
   },
 
@@ -244,6 +279,12 @@ export const JobAssignment: MessageFns<JobAssignment> = {
     if (message.payloadJson !== "") {
       obj.payloadJson = message.payloadJson;
     }
+    if (message.stepId !== "") {
+      obj.stepId = message.stepId;
+    }
+    if (message.contextJson !== "") {
+      obj.contextJson = message.contextJson;
+    }
     return obj;
   },
 
@@ -257,12 +298,14 @@ export const JobAssignment: MessageFns<JobAssignment> = {
     message.activityType = object.activityType ?? "";
     message.paramsJson = object.paramsJson ?? "";
     message.payloadJson = object.payloadJson ?? "";
+    message.stepId = object.stepId ?? "";
+    message.contextJson = object.contextJson ?? "";
     return message;
   },
 };
 
 function createBaseJobResult(): JobResult {
-  return { jobId: "", agentId: "", success: false, resultJson: "", error: "" };
+  return { jobId: "", agentId: "", success: false, resultJson: "", error: "", stepId: "" };
 }
 
 export const JobResult: MessageFns<JobResult> = {
@@ -281,6 +324,9 @@ export const JobResult: MessageFns<JobResult> = {
     }
     if (message.error !== "") {
       writer.uint32(42).string(message.error);
+    }
+    if (message.stepId !== "") {
+      writer.uint32(50).string(message.stepId);
     }
     return writer;
   },
@@ -332,6 +378,14 @@ export const JobResult: MessageFns<JobResult> = {
           message.error = reader.string();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.stepId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -360,6 +414,11 @@ export const JobResult: MessageFns<JobResult> = {
         ? globalThis.String(object.result_json)
         : "",
       error: isSet(object.error) ? globalThis.String(object.error) : "",
+      stepId: isSet(object.stepId)
+        ? globalThis.String(object.stepId)
+        : isSet(object.step_id)
+        ? globalThis.String(object.step_id)
+        : "",
     };
   },
 
@@ -380,6 +439,9 @@ export const JobResult: MessageFns<JobResult> = {
     if (message.error !== "") {
       obj.error = message.error;
     }
+    if (message.stepId !== "") {
+      obj.stepId = message.stepId;
+    }
     return obj;
   },
 
@@ -393,6 +455,7 @@ export const JobResult: MessageFns<JobResult> = {
     message.success = object.success ?? false;
     message.resultJson = object.resultJson ?? "";
     message.error = object.error ?? "";
+    message.stepId = object.stepId ?? "";
     return message;
   },
 };

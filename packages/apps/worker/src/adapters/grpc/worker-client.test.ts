@@ -47,6 +47,8 @@ describe('WorkerClient', () => {
                 activityType: 'noop',
                 paramsJson: '{}',
                 payloadJson: '{"data":"test"}',
+                stepId: 'step_0',
+                contextJson: '{}',
             },
         ], controller);
 
@@ -67,6 +69,8 @@ describe('WorkerClient', () => {
                 activityType: 'unknown-activity',
                 paramsJson: '{}',
                 payloadJson: '',
+                stepId: '',
+                contextJson: '{}',
             },
         ], controller);
 
@@ -91,6 +95,8 @@ describe('WorkerClient', () => {
                 activityType: 'failing',
                 paramsJson: '{}',
                 payloadJson: '',
+                stepId: '',
+                contextJson: '{}',
             },
         ], controller);
 
@@ -135,6 +141,8 @@ describe('WorkerClient', () => {
                                             activityType: 'noop',
                                             paramsJson: '{}',
                                             payloadJson: '',
+                                            stepId: '',
+                                            contextJson: '{}',
                                         },
                                         done: false,
                                     };

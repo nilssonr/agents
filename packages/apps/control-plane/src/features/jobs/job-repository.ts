@@ -1,3 +1,5 @@
+import type { FlowContext } from '../flows/flow-types.js';
+
 /** Persistent representation of a job as stored in the database. */
 export interface JobRow {
     id: string;
@@ -6,6 +8,9 @@ export interface JobRow {
     payload: unknown;
     result: unknown;
     error: string | null;
+    current_step_id: string | null;
+    context: FlowContext;
+    step_retries: number;
     created_at: Date;
     updated_at: Date;
 }
@@ -17,4 +22,7 @@ export interface JobRepository {
     claim(agentId: string): Promise<JobRow | null>;
     complete(id: string, result: unknown): Promise<void>;
     fail(id: string, error: string): Promise<void>;
+    getById(id: string): Promise<JobRow | null>;
+    updateStep(id: string, stepId: string, context: FlowContext): Promise<void>;
+    incrementStepRetries(id: string): Promise<JobRow | null>;
 }

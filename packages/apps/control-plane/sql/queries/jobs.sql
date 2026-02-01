@@ -20,10 +20,22 @@ WHERE jobs.id = (
 )
 RETURNING *;
 
+-- name: GetJobById :one
+SELECT * FROM jobs WHERE id = $1;
+
 -- name: CompleteJob :exec
-UPDATE jobs SET status = 'completed', result = $2, updated_at = now()
+UPDATE jobs SET status = 'completed', result = $2, current_step_id = NULL, step_retries = 0, updated_at = now()
 WHERE id = $1;
 
 -- name: FailJob :exec
 UPDATE jobs SET status = 'failed', error = $2, updated_at = now()
 WHERE id = $1;
+
+-- name: UpdateJobStep :exec
+UPDATE jobs SET current_step_id = $2, context = $3, step_retries = 0, status = 'pending', updated_at = now()
+WHERE id = $1;
+
+-- name: IncrementStepRetries :one
+UPDATE jobs SET step_retries = step_retries + 1, status = 'pending', updated_at = now()
+WHERE id = $1
+RETURNING *;

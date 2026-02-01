@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildRestServer } from './server.js';
 import { createAgentService } from '../../features/agents/agent-service.js';
 import { createJobService } from '../../features/jobs/job-service.js';
+import { createFlowService } from '../../features/flows/flow-service.js';
 import { createFakeAgentRepository } from '../../features/agents/fake-agent-repository.js';
 import { createFakeJobRepository } from '../../features/jobs/fake-job-repository.js';
 import type { AgentService } from '../../features/agents/agent-service.js';
@@ -18,7 +19,7 @@ describe('Agent routes', () => {
         const agentRepo = createFakeAgentRepository();
         const jobRepo = createFakeJobRepository();
         agentService = createAgentService(agentRepo, jobRepo);
-        jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure);
+        jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, createFlowService());
         app = buildRestServer({ agentService, jobService });
     });
 

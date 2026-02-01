@@ -2,7 +2,7 @@ import { createLogger } from '@agents/logger';
 
 const logger = createLogger('activity-registry');
 
-export type ActivityFn = (params: unknown, payload: unknown) => Promise<unknown>;
+export type ActivityFn = (params: unknown, payload: unknown, context: unknown) => Promise<unknown>;
 
 /** A name-based lookup for activity functions that workers can execute. */
 export interface ActivityRegistry {
@@ -30,7 +30,7 @@ export function createActivityRegistry(): ActivityRegistry {
         },
     };
 
-    registry.register('noop', async (_params, _payload) => {
+    registry.register('noop', async (_params, _payload, _context) => {
         logger.info('noop activity executed');
         return { ok: true };
     });
