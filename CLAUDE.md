@@ -77,11 +77,11 @@ index.ts           # Creates the app, starts it, handles process signals
 | Feature | Location | Description |
 |---------|----------|-------------|
 | **agents** | `control-plane/src/features/agents/` | Agent CRUD, invocation, failure tracking (auto-pause at threshold), restart |
-| **jobs** | `control-plane/src/features/jobs/` | Job lifecycle: claim, complete, fail, multi-step routing via flow service |
+| **jobs** | `control-plane/src/features/jobs/` | Job lifecycle: claim, complete, fail, multi-step routing via flow service, stale job reaping |
 | **flows** | `control-plane/src/features/flows/` | Multi-step orchestration: step parsing, success/failure transitions, retry logic, error handlers |
 | **logs** | `control-plane/src/features/logs/` | Batch append and retrieval of structured job execution logs |
 | **triggers** | `control-plane/src/features/triggers/` | Cron and webhook trigger definitions attached to agents |
-| **scheduler** | `control-plane/src/features/scheduler/` | Polling-based cron scheduler that evaluates triggers and invokes agents |
+| **scheduler** | `control-plane/src/features/scheduler/` | Polling-based cron scheduler that evaluates triggers and invokes agents; persists `last_fired_at` to database |
 
 ### Worker features
 
@@ -93,7 +93,7 @@ index.ts           # Creates the app, starts it, handles process signals
 
 - **agents** — `id`, `name`, `status` (active/paused), `activities` (JSONB flow definition), `failure_threshold`, `failure_count`
 - **jobs** — `id`, `agent_id`, `status` (pending/running/completed/failed), `payload`, `result`, `error`, `current_step_id`, `context`, `step_retries`
-- **triggers** — `id`, `agent_id`, `kind` (cron/webhook), `cron_expression`
+- **triggers** — `id`, `agent_id`, `kind` (cron/webhook), `cron_expression`, `last_fired_at`
 - **job_logs** — `id`, `job_id`, `step_id`, `level`, `message`, `metadata`
 
 Schema lives in `control-plane/sql/schema.sql`. Migrations in `control-plane/sql/migrations/` using `-- migrate:up` / `-- migrate:down` markers. Migrations run automatically on startup.
@@ -148,9 +148,10 @@ Defined in `packages/libs/contracts/proto/agents/v1/worker.proto`:
 3. `createMigrationRunner()` → `migrationRunner.up()` on start
 4. Repositories: `createPgAgentRepository`, `createPgJobRepository`, `createPgLogRepository`, `createPgTriggerRepository`
 5. Services: `createFlowService`, `createAgentService(agentRepo, jobRepo)`, `createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService)`, `createLogService(logRepo)`
-6. `createCronScheduler(triggerRepo, agentService, intervalMs)`
-7. `buildRestServer({ agentService, jobService, logService })`
-8. `createWorkerServiceImpl(agentService, jobService, logService, flowService, options)` → gRPC server
+6. `createJobReaper(jobRepo, agentService.handleJobFailure, { ttlMs, intervalMs })`
+7. `createCronScheduler(triggerRepo, agentService, intervalMs)`
+8. `buildRestServer({ agentService, jobService, logService })`
+9. `createWorkerServiceImpl(agentService, jobService, logService, flowService, options)` → gRPC server
 
 The circular dependency between `AgentService` and `JobService` is broken by passing `agentService.handleJobFailure` as a callback.
 
@@ -164,6 +165,8 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 | `HTTP_PORT` | No | — | REST server port |
 | `GRPC_PORT` | No | — | gRPC server port |
 | `CRON_INTERVAL_MS` | No | 60000 | Scheduler tick interval (ms) |
+| `JOB_REAPER_TTL_MS` | No | 300000 | Time before a running job is considered stuck (ms) |
+| `JOB_REAPER_INTERVAL_MS` | No | 60000 | Job reaper tick interval (ms) |
 | `GRPC_POLL_INTERVAL_MS` | No | 1000 | Job polling interval (ms) |
 
 ### Worker environment variables
@@ -172,6 +175,8 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 |----------|----------|---------|-------------|
 | `GRPC_ADDRESS` | Yes | — | Control-plane gRPC endpoint |
 | `WORKER_ID` | No | `worker-{timestamp}` | Unique worker identifier |
+| `ACTIVITY_TIMEOUT_MS` | No | 60000 | Max time for a single activity execution (ms) |
+| `SHUTDOWN_GRACE_MS` | No | 10000 | Grace period for in-flight work on shutdown (ms) |
 
 ## Code style
 
@@ -194,4 +199,4 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 
 ## Verification
 
-Always run `pnpm build && pnpm test` after changes. Currently 112 tests across 20 test files.
+Always run `pnpm build && pnpm test` after changes. Currently 122 tests across 22 test files.

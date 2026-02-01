@@ -11,6 +11,7 @@ import { createPgLogRepository } from './adapters/postgres/pg-log-repository.js'
 import { createPgTriggerRepository } from './adapters/postgres/pg-trigger-repository.js';
 import { createAgentService } from './features/agents/agent-service.js';
 import { createFlowService } from './features/flows/flow-service.js';
+import { createJobReaper } from './features/jobs/job-reaper.js';
 import { createJobService } from './features/jobs/job-service.js';
 import { createLogService } from './features/logs/log-service.js';
 import { createCronScheduler } from './features/scheduler/cron-scheduler.js';
@@ -37,6 +38,8 @@ export function createApp(): App {
         databaseUrl: { env: 'DATABASE_URL' },
         cronIntervalMs: { env: 'CRON_INTERVAL_MS', default: '60000' },
         grpcPollIntervalMs: { env: 'GRPC_POLL_INTERVAL_MS', default: '1000' },
+        jobReaperTtlMs: { env: 'JOB_REAPER_TTL_MS', default: '300000' },
+        jobReaperIntervalMs: { env: 'JOB_REAPER_INTERVAL_MS', default: '60000' },
     });
 
     // Infrastructure
@@ -54,6 +57,13 @@ export function createApp(): App {
     const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService);
     const logService = createLogService(logRepo);
     const cronScheduler = createCronScheduler(triggerRepo, agentService, Number(config.cronIntervalMs));
+    const jobReaper = createJobReaper(
+        jobRepo,
+        async (_jobId, agentId) => {
+            await agentService.handleJobFailure(agentId);
+        },
+        { ttlMs: Number(config.jobReaperTtlMs), intervalMs: Number(config.jobReaperIntervalMs) },
+    );
 
     // API
     const rest = buildRestServer({ agentService, jobService, logService });
@@ -66,10 +76,12 @@ export function createApp(): App {
         async start(): Promise<string> {
             await migrationRunner.up();
             cronScheduler.start();
+            jobReaper.start();
             return rest.listen({ port: Number(config.httpPort), host: '0.0.0.0' });
         },
         async shutdown(): Promise<void> {
             cronScheduler.stop();
+            jobReaper.stop();
             await grpcServer.shutdown();
             await rest.close();
             await pool.end();

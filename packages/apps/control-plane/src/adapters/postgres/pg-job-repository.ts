@@ -77,5 +77,27 @@ export function createPgJobRepository(pool: Pool): JobRepository {
             const row = await db.incrementStepRetries(pool, { id });
             return row ? toJobRow(row) : null;
         },
+
+        async findStaleRunningJobs(olderThan): Promise<JobRow[]> {
+            const result = await pool.query(
+                `SELECT id, agent_id, status, payload, result, error,
+                        current_step_id, context, step_retries, created_at, updated_at
+                 FROM jobs WHERE status = 'running' AND updated_at < $1`,
+                [olderThan],
+            );
+            return result.rows.map((row: Record<string, unknown>) => ({
+                id: row.id as string,
+                agent_id: row.agent_id as string,
+                status: row.status as string,
+                payload: row.payload,
+                result: row.result,
+                error: (row.error as string | null) ?? null,
+                current_step_id: (row.current_step_id as string | null) ?? null,
+                context: (row.context ?? {}) as FlowContext,
+                step_retries: row.step_retries as number,
+                created_at: row.created_at as Date,
+                updated_at: row.updated_at as Date,
+            }));
+        },
     };
 }

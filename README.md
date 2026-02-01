@@ -235,6 +235,11 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 - **Step retries** — Individual flow steps support `maxRetries` before falling through to error handlers
 - **Error routing** — Steps can define `onError` handlers that route to recovery steps by error type
 - **Worker reconnection** — Workers reconnect to the control-plane with exponential backoff (1s to 30s)
+- **Job reaper** — Background process detects jobs stuck in `running` state beyond a configurable TTL and marks them as failed
+- **Activity timeout** — Individual activity executions are bounded by a configurable timeout (default 60s)
+- **Graceful shutdown** — Workers drain in-flight activities before exiting, with a configurable grace period
+- **Persistent scheduler state** — Cron trigger `last_fired_at` is persisted to the database, surviving control-plane restarts
+- **Transaction boundaries** — `withTransaction` helper ensures atomic multi-statement database operations
 
 ## Configuration
 
@@ -246,6 +251,8 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | `HTTP_PORT`          | No       | —       | REST server port                |
 | `GRPC_PORT`          | No       | —       | gRPC server port                |
 | `CRON_INTERVAL_MS`   | No       | 60000   | Scheduler tick interval (ms)    |
+| `JOB_REAPER_TTL_MS`  | No       | 300000  | Time before a running job is considered stuck (ms) |
+| `JOB_REAPER_INTERVAL_MS` | No  | 60000   | Job reaper tick interval (ms)   |
 | `GRPC_POLL_INTERVAL_MS` | No   | 1000    | Job polling interval (ms)       |
 
 ### Worker
@@ -254,6 +261,8 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | --------------- | -------- | -------------------- | -------------------------------- |
 | `GRPC_ADDRESS`  | Yes      | —                    | Control-plane gRPC endpoint      |
 | `WORKER_ID`     | No       | `worker-{timestamp}` | Unique worker identifier         |
+| `ACTIVITY_TIMEOUT_MS` | No | 60000              | Max time for a single activity execution (ms) |
+| `SHUTDOWN_GRACE_MS` | No   | 10000              | Grace period for in-flight work on shutdown (ms) |
 
 ## Development
 

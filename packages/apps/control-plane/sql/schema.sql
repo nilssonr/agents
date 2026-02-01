@@ -14,6 +14,7 @@ CREATE TABLE triggers (
     agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
     kind TEXT NOT NULL CHECK (kind IN ('cron', 'webhook')),
     cron_expression TEXT,
+    last_fired_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

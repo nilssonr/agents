@@ -39,3 +39,7 @@ WHERE id = $1;
 UPDATE jobs SET step_retries = step_retries + 1, status = 'pending', updated_at = now()
 WHERE id = $1
 RETURNING *;
+
+-- name: FindStaleRunningJobs :many
+SELECT * FROM jobs
+WHERE status = 'running' AND updated_at < $1;

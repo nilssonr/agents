@@ -15,3 +15,6 @@ AND a.status = 'active';
 
 -- name: DeleteTrigger :exec
 DELETE FROM triggers WHERE id = $1;
+
+-- name: UpdateTriggerLastFiredAt :exec
+UPDATE triggers SET last_fired_at = $1 WHERE id = $2;

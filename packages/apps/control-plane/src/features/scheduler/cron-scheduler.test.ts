@@ -40,6 +40,19 @@ describe('CronScheduler', () => {
         expect(jobRepo.jobs[0]!.agent_id).toBe(agent.id);
     });
 
+    it('persists last_fired_at to the trigger repository', async () => {
+        const agent = await agentRepo.create('persist-agent', [], 3);
+        const trigger = await triggerRepo.create(agent.id, 'cron', '* * * * *');
+
+        scheduler.start();
+
+        vi.advanceTimersByTime(60_000);
+        await vi.advanceTimersByTimeAsync(0);
+
+        const updated = triggerRepo.triggers.find((t) => t.id === trigger.id)!;
+        expect(updated.last_fired_at).not.toBeNull();
+    });
+
     it('does not create jobs when no cron triggers exist', async () => {
         await agentRepo.create('no-cron', [], 3);
 

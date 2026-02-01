@@ -9,6 +9,7 @@ function toTriggerRow(row: db.CreateTriggerRow | db.GetTriggersByAgentRow): Trig
         agent_id: row.agentId,
         kind: row.kind,
         cron_expression: row.cronExpression,
+        last_fired_at: (row as unknown as { lastFiredAt?: Date | null }).lastFiredAt ?? null,
         created_at: row.createdAt,
     };
 }
@@ -37,6 +38,13 @@ export function createPgTriggerRepository(pool: Pool): TriggerRepository {
 
         async delete(id): Promise<void> {
             await db.deleteTrigger(pool, { id });
+        },
+
+        async updateLastFiredAt(id, firedAt): Promise<void> {
+            await pool.query(
+                'UPDATE triggers SET last_fired_at = $1 WHERE id = $2',
+                [firedAt, id],
+            );
         },
     };
 }

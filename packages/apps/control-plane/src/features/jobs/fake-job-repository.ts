@@ -78,5 +78,8 @@ export function createFakeJobRepository(): JobRepository & { jobs: JobRow[] } {
             job.updated_at = new Date();
             return job;
         },
+        async findStaleRunningJobs(olderThan): Promise<JobRow[]> {
+            return jobs.filter((j) => j.status === 'running' && j.updated_at < olderThan);
+        },
     };
 }
