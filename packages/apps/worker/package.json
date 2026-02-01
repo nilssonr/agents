@@ -12,6 +12,7 @@
         "@agents/config": "workspace:*",
         "@agents/contracts": "workspace:*",
         "@agents/logger": "workspace:*",
-        "nice-grpc": "^2.1.0"
+        "nice-grpc": "^2.1.0",
+        "zod": "^3.24.0"
     }
 }

@@ -1,5 +1,7 @@
 import { createLogger } from '@agents/logger';
 
+import { createHttpRequestActivity } from './http-request-activity.js';
+
 const logger = createLogger('activity-registry');
 
 export type ActivityFn = (params: unknown, payload: unknown, context: unknown) => Promise<unknown>;
@@ -34,6 +36,8 @@ export function createActivityRegistry(): ActivityRegistry {
         logger.info('noop activity executed');
         return { ok: true };
     });
+
+    registry.register('http-request', createHttpRequestActivity());
 
     return registry;
 }
