@@ -3,6 +3,7 @@ import { createLogger } from '@agents/logger';
 
 import { createActivityLogger } from '../../features/activities/activity-logger.js';
 import type { ActivityRegistry } from '../../features/activities/activity-registry.js';
+import type { WorkerMetrics } from '../../features/metrics/worker-metrics.js';
 
 const logger = createLogger('worker-client');
 
@@ -13,6 +14,8 @@ export interface WorkerClientOptions {
     registry: ActivityRegistry;
     /** Maximum time in milliseconds for a single activity execution. Defaults to 60 000. */
     activityTimeoutMs?: number;
+    /** Optional worker metrics for activity instrumentation. */
+    metrics?: WorkerMetrics;
 }
 
 const BASE_RETRY_MS = 1000;
@@ -28,7 +31,7 @@ const MAX_RETRY_MS = 30000;
 const DEFAULT_ACTIVITY_TIMEOUT_MS = 60_000;
 
 export async function runWorker(options: WorkerClientOptions, signal: AbortSignal): Promise<void> {
-    const { workerId, client, registry, activityTimeoutMs = DEFAULT_ACTIVITY_TIMEOUT_MS } = options;
+    const { workerId, client, registry, activityTimeoutMs = DEFAULT_ACTIVITY_TIMEOUT_MS, metrics } = options;
     let retryMs = BASE_RETRY_MS;
     let connected = false;
 
@@ -40,7 +43,7 @@ export async function runWorker(options: WorkerClientOptions, signal: AbortSigna
             for await (const assignment of stream) {
                 connected = true;
                 retryMs = BASE_RETRY_MS;
-                await processAssignment(assignment, client, registry, activityTimeoutMs);
+                await processAssignment(assignment, client, registry, activityTimeoutMs, metrics);
             }
         } catch (err: unknown) {
             if (signal.aborted) {
@@ -76,6 +79,7 @@ async function processAssignment(
     client: WorkerServiceClient,
     registry: ActivityRegistry,
     activityTimeoutMs: number,
+    metrics?: WorkerMetrics,
 ): Promise<void> {
     logger.info({ jobId: assignment.jobId, activityType: assignment.activityType }, 'processing job');
 
@@ -95,6 +99,7 @@ async function processAssignment(
 
     const activityLogger = createActivityLogger();
 
+    const startTime = Date.now();
     try {
         const params = assignment.paramsJson ? JSON.parse(assignment.paramsJson) as unknown : {};
         const payload = assignment.payloadJson ? JSON.parse(assignment.payloadJson) as unknown : null;
@@ -103,6 +108,9 @@ async function processAssignment(
             activity(params, payload, context, activityLogger),
             rejectAfterTimeout(activityTimeoutMs, `Activity '${assignment.activityType}' timed out after ${String(activityTimeoutMs)}ms`),
         ]);
+        const durationSec = (Date.now() - startTime) / 1000;
+        metrics?.activityDuration.observe({ type: assignment.activityType }, durationSec);
+        metrics?.activitiesTotal.inc({ type: assignment.activityType, status: 'success' });
         await client.reportJobResult({
             jobId: assignment.jobId,
             agentId: assignment.agentId,
@@ -113,6 +121,9 @@ async function processAssignment(
             logsJson: JSON.stringify(activityLogger.entries()),
         });
     } catch (err: unknown) {
+        const durationSec = (Date.now() - startTime) / 1000;
+        metrics?.activityDuration.observe({ type: assignment.activityType }, durationSec);
+        metrics?.activitiesTotal.inc({ type: assignment.activityType, status: 'failure' });
         const errorMessage = err instanceof Error ? err.message : String(err);
         await client.reportJobResult({
             jobId: assignment.jobId,

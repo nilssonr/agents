@@ -1,5 +1,6 @@
 import type { AgentRepository } from '../agents/agent-repository.js';
 import type { FlowService } from '../flows/flow-service.js';
+import type { Metrics } from '../metrics/metrics.js';
 import type { JobRepository, JobRow } from './job-repository.js';
 
 /** High-level operations on jobs: listing, claiming, completion, and failure reporting. */
@@ -31,6 +32,7 @@ export function createJobService(
     agents: AgentRepository,
     onJobFailure: (agentId: string) => Promise<void>,
     flows: FlowService,
+    metrics?: Metrics,
 ): JobService {
     return {
         async getJobsForAgent(agentId, status): Promise<JobRow[]> {
@@ -38,17 +40,25 @@ export function createJobService(
         },
 
         async claimNextJob(agentId): Promise<JobRow | null> {
-            return jobs.claim(agentId);
+            const job = await jobs.claim(agentId);
+            if (job) {
+                metrics?.jobsActive.inc();
+            }
+            return job;
         },
 
         async completeJob(jobId, agentId, result): Promise<void> {
             await jobs.complete(jobId, result);
             await agents.reset(agentId);
+            metrics?.jobsActive.dec();
+            metrics?.jobsTotal.inc({ status: 'completed', agent_id: agentId });
         },
 
         async failJob(jobId, agentId, error): Promise<void> {
             await jobs.fail(jobId, error);
             await onJobFailure(agentId);
+            metrics?.jobsActive.dec();
+            metrics?.jobsTotal.inc({ status: 'failed', agent_id: agentId });
         },
 
         async processStepResult(jobId, agentId, stepId, success, result, error, activities): Promise<void> {

@@ -12,6 +12,8 @@ import type { LogService } from '../../features/logs/log-service.js';
 /** Configuration for the gRPC WorkerService server-side implementation. */
 export interface WorkerServiceOptions {
     pollIntervalMs: number;
+    /** Optional metrics to increment on job assignments. */
+    metrics?: { grpcAssignments: { inc(): void } };
 }
 
 /**
@@ -83,6 +85,7 @@ export function createWorkerServiceImpl(
                             stepId: stepId ?? '',
                             contextJson: JSON.stringify(stepContext),
                         };
+                        options.metrics?.grpcAssignments.inc();
                     }
                 }
 

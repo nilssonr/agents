@@ -177,6 +177,14 @@ Migrations run automatically on control-plane startup.
 | ------ | ----------------- | ------------------------ |
 | GET    | `/jobs/:id/logs`  | Get logs for a job       |
 
+### Health & Metrics
+
+| Method | Path       | Description                                  |
+| ------ | ---------- | -------------------------------------------- |
+| GET    | `/health`  | Liveness probe (always 200)                  |
+| GET    | `/ready`   | Readiness probe (DB ping, 200 or 503)        |
+| GET    | `/metrics` | Prometheus-formatted metrics                 |
+
 ### Webhooks
 
 | Method | Path                    | Description                        |
@@ -240,6 +248,9 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 - **Graceful shutdown** — Workers drain in-flight activities before exiting, with a configurable grace period
 - **Persistent scheduler state** — Cron trigger `last_fired_at` is persisted to the database, surviving control-plane restarts
 - **Transaction boundaries** — `withTransaction` helper ensures atomic multi-statement database operations
+- **Health checks** — `GET /health` (liveness) and `GET /ready` (readiness with DB ping) for container orchestrators
+- **Prometheus metrics** — Job counters, duration histograms, active gauge, scheduler ticks, gRPC assignments (control-plane); activity counters and duration (worker)
+- **Configurable DB pool** — Pool sizing and timeout parameters for production tuning
 
 ## Configuration
 
@@ -248,6 +259,10 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | Variable             | Required | Default | Description                     |
 | -------------------- | -------- | ------- | ------------------------------- |
 | `DATABASE_URL`       | Yes      | —       | PostgreSQL connection string    |
+| `DB_POOL_MIN`        | No       | 2       | Minimum pool connections        |
+| `DB_POOL_MAX`        | No       | 10      | Maximum pool connections        |
+| `DB_CONNECTION_TIMEOUT_MS` | No | 5000    | Connection acquire timeout (ms) |
+| `DB_IDLE_TIMEOUT_MS` | No       | 30000   | Idle connection timeout (ms)    |
 | `HTTP_PORT`          | No       | —       | REST server port                |
 | `GRPC_PORT`          | No       | —       | gRPC server port                |
 | `CRON_INTERVAL_MS`   | No       | 60000   | Scheduler tick interval (ms)    |
@@ -263,6 +278,7 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | `WORKER_ID`     | No       | `worker-{timestamp}` | Unique worker identifier         |
 | `ACTIVITY_TIMEOUT_MS` | No | 60000              | Max time for a single activity execution (ms) |
 | `SHUTDOWN_GRACE_MS` | No   | 10000              | Grace period for in-flight work on shutdown (ms) |
+| `METRICS_PORT`  | No       | 9090               | Worker metrics HTTP server port  |
 
 ## Development
 

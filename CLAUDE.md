@@ -82,12 +82,14 @@ index.ts           # Creates the app, starts it, handles process signals
 | **logs** | `control-plane/src/features/logs/` | Batch append and retrieval of structured job execution logs |
 | **triggers** | `control-plane/src/features/triggers/` | Cron and webhook trigger definitions attached to agents |
 | **scheduler** | `control-plane/src/features/scheduler/` | Polling-based cron scheduler that evaluates triggers and invokes agents; persists `last_fired_at` to database |
+| **metrics** | `control-plane/src/features/metrics/` | Prometheus metrics (prom-client): job counters/histogram/gauge, scheduler ticks, gRPC assignments |
 
 ### Worker features
 
 | Feature | Location | Description |
 |---------|----------|-------------|
 | **activities** | `worker/src/features/activities/` | Activity registry with built-in activities: `noop`, `http-request`, `log` |
+| **metrics** | `worker/src/features/metrics/` | Prometheus metrics for worker: activity totals and duration histogram |
 
 ### Database tables
 
@@ -128,6 +130,12 @@ Schema lives in `control-plane/sql/schema.sql`. Migrations in `control-plane/sql
 
 - `GET /jobs/:id/logs` — Get logs for a job
 
+### Health & Metrics
+
+- `GET /health` — Liveness probe → 200
+- `GET /ready` — Readiness probe (DB ping) → 200 or 503
+- `GET /metrics` — Prometheus metrics
+
 ### Webhooks
 
 - `POST /webhooks/:agentId` — External trigger endpoint
@@ -147,11 +155,12 @@ Defined in `packages/libs/contracts/proto/agents/v1/worker.proto`:
 2. `pg.Pool` with `DATABASE_URL`
 3. `createMigrationRunner()` → `migrationRunner.up()` on start
 4. Repositories: `createPgAgentRepository`, `createPgJobRepository`, `createPgLogRepository`, `createPgTriggerRepository`
-5. Services: `createFlowService`, `createAgentService(agentRepo, jobRepo)`, `createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService)`, `createLogService(logRepo)`
-6. `createJobReaper(jobRepo, agentService.handleJobFailure, { ttlMs, intervalMs })`
-7. `createCronScheduler(triggerRepo, agentService, intervalMs)`
-8. `buildRestServer({ agentService, jobService, logService })`
-9. `createWorkerServiceImpl(agentService, jobService, logService, flowService, options)` → gRPC server
+5. `createMetrics()` → metrics + registry
+6. Services: `createFlowService`, `createAgentService(agentRepo, jobRepo)`, `createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService, metrics)`, `createLogService(logRepo)`
+7. `createJobReaper(jobRepo, agentService.handleJobFailure, { ttlMs, intervalMs })`
+8. `createCronScheduler(triggerRepo, agentService, intervalMs, metrics)`
+9. `buildRestServer({ agentService, jobService, logService, checkDb, metricsRegistry })`
+10. `createWorkerServiceImpl(agentService, jobService, logService, flowService, { pollIntervalMs, metrics })` → gRPC server
 
 The circular dependency between `AgentService` and `JobService` is broken by passing `agentService.handleJobFailure` as a callback.
 
@@ -162,6 +171,10 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `DATABASE_URL` | Yes | — | PostgreSQL connection string |
+| `DB_POOL_MIN` | No | 2 | Minimum pool connections |
+| `DB_POOL_MAX` | No | 10 | Maximum pool connections |
+| `DB_CONNECTION_TIMEOUT_MS` | No | 5000 | Connection acquire timeout (ms) |
+| `DB_IDLE_TIMEOUT_MS` | No | 30000 | Idle connection timeout (ms) |
 | `HTTP_PORT` | No | — | REST server port |
 | `GRPC_PORT` | No | — | gRPC server port |
 | `CRON_INTERVAL_MS` | No | 60000 | Scheduler tick interval (ms) |
@@ -177,6 +190,7 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 | `WORKER_ID` | No | `worker-{timestamp}` | Unique worker identifier |
 | `ACTIVITY_TIMEOUT_MS` | No | 60000 | Max time for a single activity execution (ms) |
 | `SHUTDOWN_GRACE_MS` | No | 10000 | Grace period for in-flight work on shutdown (ms) |
+| `METRICS_PORT` | No | 9090 | Worker metrics HTTP server port |
 
 ## Code style
 
@@ -199,4 +213,4 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 
 ## Verification
 
-Always run `pnpm build && pnpm test` after changes. Currently 122 tests across 22 test files.
+Always run `pnpm build && pnpm test` after changes. Currently 129 tests across 25 test files.

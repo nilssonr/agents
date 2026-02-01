@@ -14,6 +14,7 @@ import { createFlowService } from './features/flows/flow-service.js';
 import { createJobReaper } from './features/jobs/job-reaper.js';
 import { createJobService } from './features/jobs/job-service.js';
 import { createLogService } from './features/logs/log-service.js';
+import { createMetrics } from './features/metrics/metrics.js';
 import { createCronScheduler } from './features/scheduler/cron-scheduler.js';
 import { startGrpcServer } from './api/grpc/server.js';
 import { createWorkerServiceImpl } from './api/grpc/worker-service-impl.js';
@@ -36,6 +37,10 @@ export function createApp(): App {
         httpPort: { env: 'HTTP_PORT' },
         grpcPort: { env: 'GRPC_PORT' },
         databaseUrl: { env: 'DATABASE_URL' },
+        dbPoolMin: { env: 'DB_POOL_MIN', default: '2' },
+        dbPoolMax: { env: 'DB_POOL_MAX', default: '10' },
+        dbConnectionTimeoutMs: { env: 'DB_CONNECTION_TIMEOUT_MS', default: '5000' },
+        dbIdleTimeoutMs: { env: 'DB_IDLE_TIMEOUT_MS', default: '30000' },
         cronIntervalMs: { env: 'CRON_INTERVAL_MS', default: '60000' },
         grpcPollIntervalMs: { env: 'GRPC_POLL_INTERVAL_MS', default: '1000' },
         jobReaperTtlMs: { env: 'JOB_REAPER_TTL_MS', default: '300000' },
@@ -43,7 +48,13 @@ export function createApp(): App {
     });
 
     // Infrastructure
-    const pool = new pg.Pool({ connectionString: config.databaseUrl });
+    const pool = new pg.Pool({
+        connectionString: config.databaseUrl,
+        min: Number(config.dbPoolMin),
+        max: Number(config.dbPoolMax),
+        connectionTimeoutMillis: Number(config.dbConnectionTimeoutMs),
+        idleTimeoutMillis: Number(config.dbIdleTimeoutMs),
+    });
     const migrationsPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'sql', 'migrations');
     const migrationRunner = createMigrationRunner(pool, { migrationsPath });
     const agentRepo = createPgAgentRepository(pool);
@@ -51,12 +62,15 @@ export function createApp(): App {
     const logRepo = createPgLogRepository(pool);
     const triggerRepo = createPgTriggerRepository(pool);
 
+    // Metrics
+    const { metrics, registry: metricsRegistry } = createMetrics();
+
     // Features
     const flowService = createFlowService();
     const agentService = createAgentService(agentRepo, jobRepo);
-    const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService);
+    const jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService, metrics);
     const logService = createLogService(logRepo);
-    const cronScheduler = createCronScheduler(triggerRepo, agentService, Number(config.cronIntervalMs));
+    const cronScheduler = createCronScheduler(triggerRepo, agentService, Number(config.cronIntervalMs), metrics);
     const jobReaper = createJobReaper(
         jobRepo,
         async (_jobId, agentId) => {
@@ -66,9 +80,16 @@ export function createApp(): App {
     );
 
     // API
-    const rest = buildRestServer({ agentService, jobService, logService });
+    const rest = buildRestServer({
+        agentService,
+        jobService,
+        logService,
+        checkDb: async () => { await pool.query('SELECT 1'); },
+        metricsRegistry,
+    });
     const workerImpl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, logService, {
         pollIntervalMs: Number(config.grpcPollIntervalMs),
+        metrics,
     });
     const grpcServer = startGrpcServer(Number(config.grpcPort), workerImpl);
 
