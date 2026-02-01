@@ -23,6 +23,7 @@ export interface JobAssignment {
   payloadJson: string;
   stepId: string;
   contextJson: string;
+  stepLabel: string;
 }
 
 export interface JobResult {
@@ -122,7 +123,16 @@ export const SubscribeRequest: MessageFns<SubscribeRequest> = {
 };
 
 function createBaseJobAssignment(): JobAssignment {
-  return { jobId: "", agentId: "", activityType: "", paramsJson: "", payloadJson: "", stepId: "", contextJson: "" };
+  return {
+    jobId: "",
+    agentId: "",
+    activityType: "",
+    paramsJson: "",
+    payloadJson: "",
+    stepId: "",
+    contextJson: "",
+    stepLabel: "",
+  };
 }
 
 export const JobAssignment: MessageFns<JobAssignment> = {
@@ -147,6 +157,9 @@ export const JobAssignment: MessageFns<JobAssignment> = {
     }
     if (message.contextJson !== "") {
       writer.uint32(58).string(message.contextJson);
+    }
+    if (message.stepLabel !== "") {
+      writer.uint32(66).string(message.stepLabel);
     }
     return writer;
   },
@@ -214,6 +227,14 @@ export const JobAssignment: MessageFns<JobAssignment> = {
           message.contextJson = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.stepLabel = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -260,6 +281,11 @@ export const JobAssignment: MessageFns<JobAssignment> = {
         : isSet(object.context_json)
         ? globalThis.String(object.context_json)
         : "",
+      stepLabel: isSet(object.stepLabel)
+        ? globalThis.String(object.stepLabel)
+        : isSet(object.step_label)
+        ? globalThis.String(object.step_label)
+        : "",
     };
   },
 
@@ -286,6 +312,9 @@ export const JobAssignment: MessageFns<JobAssignment> = {
     if (message.contextJson !== "") {
       obj.contextJson = message.contextJson;
     }
+    if (message.stepLabel !== "") {
+      obj.stepLabel = message.stepLabel;
+    }
     return obj;
   },
 
@@ -301,6 +330,7 @@ export const JobAssignment: MessageFns<JobAssignment> = {
     message.payloadJson = object.payloadJson ?? "";
     message.stepId = object.stepId ?? "";
     message.contextJson = object.contextJson ?? "";
+    message.stepLabel = object.stepLabel ?? "";
     return message;
   },
 };
