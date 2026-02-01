@@ -4,6 +4,7 @@
         { "path": "packages/libs/logger" },
         { "path": "packages/libs/config" },
         { "path": "packages/libs/contracts" },
+        { "path": "packages/libs/metrics" },
         { "path": "packages/apps/control-plane" },
         { "path": "packages/apps/worker" }
     ]

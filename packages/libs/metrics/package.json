@@ -1,0 +1,25 @@
+{
+    "name": "@agents/metrics",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run"
+    },
+    "devDependencies": {
+        "vitest": "^3.0.0"
+    },
+    "dependencies": {
+        "prom-client": "^15.1.3"
+    }
+}

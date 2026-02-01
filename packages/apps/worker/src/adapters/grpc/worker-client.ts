@@ -41,20 +41,27 @@ export async function runWorker(options: WorkerClientOptions, signal: AbortSigna
             const stream = client.subscribeToJobs({ workerId, capabilities: [] }, { signal });
 
             for await (const assignment of stream) {
-                connected = true;
+                if (!connected) {
+                    connected = true;
+                    metrics?.connected.set(1);
+                }
                 retryMs = BASE_RETRY_MS;
                 await processAssignment(assignment, client, registry, activityTimeoutMs, metrics);
             }
         } catch (err: unknown) {
             if (signal.aborted) {
                 logger.info('worker shutting down');
+                metrics?.connected.set(0);
                 return;
             }
             if (connected) {
                 logger.warn({ err, retryMs }, 'connection lost, reconnecting');
+                connected = false;
+                metrics?.connected.set(0);
             } else {
                 logger.info({ retryMs }, 'control-plane not ready, retrying');
             }
+            metrics?.reconnectsTotal.inc();
             await sleep(retryMs, signal);
             retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
         }
@@ -72,6 +79,16 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
         const timer = setTimeout(resolve, ms);
         signal.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
     });
+}
+
+/** Timeout error message prefix used to distinguish timeouts from other failures. */
+const TIMEOUT_PREFIX = 'Activity \'';
+const TIMEOUT_SUFFIX = '\' timed out after ';
+
+/** Returns true if the error was caused by an activity timeout. */
+function isTimeoutError(err: unknown): boolean {
+    if (!(err instanceof Error)) return false;
+    return err.message.startsWith(TIMEOUT_PREFIX) && err.message.includes(TIMEOUT_SUFFIX);
 }
 
 async function processAssignment(
@@ -98,6 +115,7 @@ async function processAssignment(
     }
 
     const activityLogger = createActivityLogger();
+    const jobStartTime = Date.now();
 
     const startTime = Date.now();
     try {
@@ -120,10 +138,14 @@ async function processAssignment(
             stepId: assignment.stepId ?? '',
             logsJson: JSON.stringify(activityLogger.entries()),
         });
+        const jobDurationSec = (Date.now() - jobStartTime) / 1000;
+        metrics?.jobDuration.observe({ agent_id: assignment.agentId }, jobDurationSec);
+        metrics?.jobsTotal.inc({ agent_id: assignment.agentId, status: 'success' });
     } catch (err: unknown) {
         const durationSec = (Date.now() - startTime) / 1000;
         metrics?.activityDuration.observe({ type: assignment.activityType }, durationSec);
-        metrics?.activitiesTotal.inc({ type: assignment.activityType, status: 'failure' });
+        const status = isTimeoutError(err) ? 'timeout' : 'failure';
+        metrics?.activitiesTotal.inc({ type: assignment.activityType, status });
         const errorMessage = err instanceof Error ? err.message : String(err);
         await client.reportJobResult({
             jobId: assignment.jobId,
@@ -134,5 +156,8 @@ async function processAssignment(
             stepId: assignment.stepId ?? '',
             logsJson: JSON.stringify(activityLogger.entries()),
         });
+        const jobDurationSec = (Date.now() - jobStartTime) / 1000;
+        metrics?.jobDuration.observe({ agent_id: assignment.agentId }, jobDurationSec);
+        metrics?.jobsTotal.inc({ agent_id: assignment.agentId, status: 'failure' });
     }
 }

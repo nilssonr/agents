@@ -25,6 +25,7 @@ export function createMetrics(registry?: Registry): { metrics: Metrics; registry
                 name: 'agents_jobs_duration_seconds',
                 help: 'Job duration in seconds',
                 labelNames: ['status', 'agent_id'] as const,
+                buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30],
                 registers: [reg],
             }),
             jobsActive: new Gauge({

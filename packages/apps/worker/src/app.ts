@@ -1,10 +1,8 @@
-import { createServer } from 'node:http';
-import type { Server } from 'node:http';
-
 import { createChannel, createClient } from 'nice-grpc';
 
 import { loadConfig } from '@agents/config';
 import { WorkerServiceDefinition } from '@agents/contracts';
+import { createMetricsServer } from '@agents/metrics';
 
 import { runWorker } from './adapters/grpc/worker-client.js';
 import { createActivityRegistry } from './features/activities/activity-registry.js';
@@ -35,20 +33,14 @@ export function createApp(): App {
     const client = createClient(WorkerServiceDefinition, channel);
     const activityRegistry = createActivityRegistry();
     const { metrics, registry: metricsRegistry } = createWorkerMetrics();
+    const metricsServer = createMetricsServer(metricsRegistry, Number(config.metricsPort));
     const abortController = new AbortController();
     const graceMs = Number(config.shutdownGraceMs);
     let workerPromise: Promise<void> | null = null;
-    let metricsServer: Server | null = null;
 
     return {
-        start(): Promise<void> {
-            metricsServer = createServer((_req, res) => {
-                void metricsRegistry.metrics().then((output) => {
-                    res.writeHead(200, { 'content-type': metricsRegistry.contentType });
-                    res.end(output);
-                });
-            });
-            metricsServer.listen(Number(config.metricsPort));
+        async start(): Promise<void> {
+            await metricsServer.start();
 
             workerPromise = runWorker(
                 {
@@ -64,9 +56,7 @@ export function createApp(): App {
         },
         async shutdown(): Promise<void> {
             abortController.abort();
-            if (metricsServer) {
-                metricsServer.close();
-            }
+            await metricsServer.stop();
             if (workerPromise) {
                 await Promise.race([
                     workerPromise,

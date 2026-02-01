@@ -3,6 +3,7 @@ import { join, dirname } from 'node:path';
 import pg from 'pg';
 
 import { loadConfig } from '@agents/config';
+import { createMetricsServer } from '@agents/metrics';
 import { createMigrationRunner } from '@agents/migrations';
 
 import { createPgAgentRepository } from './adapters/postgres/pg-agent-repository.js';
@@ -45,6 +46,7 @@ export function createApp(): App {
         grpcPollIntervalMs: { env: 'GRPC_POLL_INTERVAL_MS', default: '1000' },
         jobReaperTtlMs: { env: 'JOB_REAPER_TTL_MS', default: '300000' },
         jobReaperIntervalMs: { env: 'JOB_REAPER_INTERVAL_MS', default: '60000' },
+        metricsPort: { env: 'METRICS_PORT', default: '9090' },
     });
 
     // Infrastructure
@@ -64,6 +66,7 @@ export function createApp(): App {
 
     // Metrics
     const { metrics, registry: metricsRegistry } = createMetrics();
+    const metricsServer = createMetricsServer(metricsRegistry, Number(config.metricsPort));
 
     // Features
     const flowService = createFlowService();
@@ -85,7 +88,6 @@ export function createApp(): App {
         jobService,
         logService,
         checkDb: async () => { await pool.query('SELECT 1'); },
-        metricsRegistry,
     });
     const workerImpl = createWorkerServiceImpl(agentService, jobService, jobRepo, flowService, logService, {
         pollIntervalMs: Number(config.grpcPollIntervalMs),
@@ -96,6 +98,7 @@ export function createApp(): App {
     return {
         async start(): Promise<string> {
             await migrationRunner.up();
+            await metricsServer.start();
             cronScheduler.start();
             jobReaper.start();
             return rest.listen({ port: Number(config.httpPort), host: '0.0.0.0' });
@@ -105,6 +108,7 @@ export function createApp(): App {
             jobReaper.stop();
             await grpcServer.shutdown();
             await rest.close();
+            await metricsServer.stop();
             await pool.end();
         },
     };

@@ -92,6 +92,7 @@ packages/
     config/              # Env-based config loader
     contracts/           # Protobuf definitions + generated gRPC types
     logger/              # Structured logger (pino)
+    metrics/             # Shared Prometheus metrics server
     migrations/          # SQL migration runner
 ```
 
@@ -177,13 +178,16 @@ Migrations run automatically on control-plane startup.
 | ------ | ----------------- | ------------------------ |
 | GET    | `/jobs/:id/logs`  | Get logs for a job       |
 
-### Health & Metrics
+### Health
 
 | Method | Path       | Description                                  |
 | ------ | ---------- | -------------------------------------------- |
 | GET    | `/health`  | Liveness probe (always 200)                  |
 | GET    | `/ready`   | Readiness probe (DB ping, 200 or 503)        |
-| GET    | `/metrics` | Prometheus-formatted metrics                 |
+
+### Metrics
+
+Both control-plane and worker serve Prometheus metrics on a dedicated `METRICS_PORT` (default 9090) via the `@agents/metrics` shared library, separate from REST/gRPC ports. Histograms use explicit buckets tuned for p95/p99 percentile resolution.
 
 ### Webhooks
 
@@ -249,7 +253,7 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 - **Persistent scheduler state** — Cron trigger `last_fired_at` is persisted to the database, surviving control-plane restarts
 - **Transaction boundaries** — `withTransaction` helper ensures atomic multi-statement database operations
 - **Health checks** — `GET /health` (liveness) and `GET /ready` (readiness with DB ping) for container orchestrators
-- **Prometheus metrics** — Job counters, duration histograms, active gauge, scheduler ticks, gRPC assignments (control-plane); activity counters and duration (worker)
+- **Prometheus metrics** — Job counters, duration histograms (p95/p99 buckets), active gauge, scheduler ticks, gRPC assignments (control-plane); activity totals/duration, job totals/duration, reconnect counter, connected gauge (worker)
 - **Configurable DB pool** — Pool sizing and timeout parameters for production tuning
 
 ## Configuration
@@ -269,6 +273,7 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | `JOB_REAPER_TTL_MS`  | No       | 300000  | Time before a running job is considered stuck (ms) |
 | `JOB_REAPER_INTERVAL_MS` | No  | 60000   | Job reaper tick interval (ms)   |
 | `GRPC_POLL_INTERVAL_MS` | No   | 1000    | Job polling interval (ms)       |
+| `METRICS_PORT`       | No       | 9090    | Prometheus metrics HTTP server port |
 
 ### Worker
 

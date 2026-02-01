@@ -31,6 +31,7 @@ packages/
     config/            # Env-based config loader
     contracts/         # Protobuf-generated gRPC types
     logger/            # Structured logger (pino)
+    metrics/           # Shared Prometheus metrics server
     migrations/        # SQL migration runner
 ```
 
@@ -89,7 +90,7 @@ index.ts           # Creates the app, starts it, handles process signals
 | Feature | Location | Description |
 |---------|----------|-------------|
 | **activities** | `worker/src/features/activities/` | Activity registry with built-in activities: `noop`, `http-request`, `log` |
-| **metrics** | `worker/src/features/metrics/` | Prometheus metrics for worker: activity totals and duration histogram |
+| **metrics** | `worker/src/features/metrics/` | Prometheus metrics: activity totals/duration, job totals/duration, reconnects counter, connected gauge |
 
 ### Database tables
 
@@ -130,11 +131,14 @@ Schema lives in `control-plane/sql/schema.sql`. Migrations in `control-plane/sql
 
 - `GET /jobs/:id/logs` — Get logs for a job
 
-### Health & Metrics
+### Health
 
 - `GET /health` — Liveness probe → 200
 - `GET /ready` — Readiness probe (DB ping) → 200 or 503
-- `GET /metrics` — Prometheus metrics
+
+### Metrics
+
+Both apps serve Prometheus metrics on a dedicated `METRICS_PORT` (default 9090) via `@agents/metrics`, separate from REST/gRPC ports.
 
 ### Webhooks
 
@@ -155,11 +159,11 @@ Defined in `packages/libs/contracts/proto/agents/v1/worker.proto`:
 2. `pg.Pool` with `DATABASE_URL`
 3. `createMigrationRunner()` → `migrationRunner.up()` on start
 4. Repositories: `createPgAgentRepository`, `createPgJobRepository`, `createPgLogRepository`, `createPgTriggerRepository`
-5. `createMetrics()` → metrics + registry
+5. `createMetrics()` → metrics + registry → `createMetricsServer(registry, metricsPort)`
 6. Services: `createFlowService`, `createAgentService(agentRepo, jobRepo)`, `createJobService(jobRepo, agentRepo, agentService.handleJobFailure, flowService, metrics)`, `createLogService(logRepo)`
 7. `createJobReaper(jobRepo, agentService.handleJobFailure, { ttlMs, intervalMs })`
 8. `createCronScheduler(triggerRepo, agentService, intervalMs, metrics)`
-9. `buildRestServer({ agentService, jobService, logService, checkDb, metricsRegistry })`
+9. `buildRestServer({ agentService, jobService, logService, checkDb })`
 10. `createWorkerServiceImpl(agentService, jobService, logService, flowService, { pollIntervalMs, metrics })` → gRPC server
 
 The circular dependency between `AgentService` and `JobService` is broken by passing `agentService.handleJobFailure` as a callback.
@@ -181,6 +185,7 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 | `JOB_REAPER_TTL_MS` | No | 300000 | Time before a running job is considered stuck (ms) |
 | `JOB_REAPER_INTERVAL_MS` | No | 60000 | Job reaper tick interval (ms) |
 | `GRPC_POLL_INTERVAL_MS` | No | 1000 | Job polling interval (ms) |
+| `METRICS_PORT` | No | 9090 | Prometheus metrics HTTP server port |
 
 ### Worker environment variables
 
@@ -213,4 +218,4 @@ The circular dependency between `AgentService` and `JobService` is broken by pas
 
 ## Verification
 
-Always run `pnpm build && pnpm test` after changes. Currently 129 tests across 25 test files.
+Always run `pnpm build && pnpm test` after changes. Currently 133 tests across 26 test files.
