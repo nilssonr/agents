@@ -164,7 +164,7 @@ Migrations run automatically on control-plane startup.
 
 | Method | Path                    | Description                        |
 | ------ | ----------------------- | ---------------------------------- |
-| POST   | `/agents`               | Create an agent                    |
+| POST   | `/agents`               | Create an agent (Zod-validated)    |
 | GET    | `/agents`               | List all agents                    |
 | GET    | `/agents/:id`           | Get an agent                       |
 | DELETE | `/agents/:id`           | Delete an agent                    |
@@ -199,7 +199,7 @@ Both control-plane and worker serve Prometheus metrics on a dedicated `METRICS_P
 
 Defined in `packages/libs/contracts/proto/agents/v1/worker.proto`:
 
-- **SubscribeToJobs** — Server-streaming RPC. Worker subscribes and receives `JobAssignment` messages as jobs become available.
+- **SubscribeToJobs** — Server-streaming RPC. Worker subscribes with capabilities and receives `JobAssignment` messages as matching jobs become available.
 - **ReportJobResult** — Unary RPC. Worker reports success/failure, result data, and collected logs.
 
 ## Multi-Step Flows
@@ -255,6 +255,10 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 - **Health checks** — `GET /health` (liveness) and `GET /ready` (readiness with DB ping) for container orchestrators
 - **Prometheus metrics** — Job counters, duration histograms (p95/p99 buckets), active gauge, scheduler ticks, gRPC assignments (control-plane); activity totals/duration, job totals/duration, reconnect counter, connected gauge (worker)
 - **Configurable DB pool** — Pool sizing and timeout parameters for production tuning
+- **Input validation** — Zod-based REST request body validation with structured 400 error responses
+- **Context size limits** — Flow context is bounded by a configurable maximum size (default 1 MB), preventing unbounded memory growth
+- **Worker concurrency** — Configurable concurrent activity execution per worker (default 1, sequential)
+- **Capabilities-based routing** — Workers advertise their registered activity types; control-plane only assigns matching jobs
 
 ## Configuration
 
@@ -274,6 +278,7 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | `JOB_REAPER_INTERVAL_MS` | No  | 60000   | Job reaper tick interval (ms)   |
 | `GRPC_POLL_INTERVAL_MS` | No   | 1000    | Job polling interval (ms)       |
 | `METRICS_PORT`       | No       | 9090    | Prometheus metrics HTTP server port |
+| `MAX_CONTEXT_SIZE_BYTES` | No  | 1048576 | Maximum flow context size in bytes  |
 
 ### Worker
 
@@ -284,6 +289,7 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | `ACTIVITY_TIMEOUT_MS` | No | 60000              | Max time for a single activity execution (ms) |
 | `SHUTDOWN_GRACE_MS` | No   | 10000              | Grace period for in-flight work on shutdown (ms) |
 | `METRICS_PORT`  | No       | 9090               | Worker metrics HTTP server port  |
+| `WORKER_CONCURRENCY` | No  | 1                  | Max concurrent activity executions |
 
 ## Development
 

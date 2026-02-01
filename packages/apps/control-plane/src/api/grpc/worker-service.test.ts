@@ -108,6 +108,49 @@ describe('WorkerService gRPC', () => {
         expect(jobs).toHaveLength(1);
     });
 
+    it('filters assignments by worker capabilities', async () => {
+        const agent = await agentService.createAgent('http-agent', [{ type: 'http-request', params: {} }], 3);
+        await agentService.invokeAgent(agent.id, null);
+
+        // Worker with only 'log' capability should not receive http-request jobs
+        const abortController = new AbortController();
+        const stream = client.subscribeToJobs({ workerId: 'w1', capabilities: ['log'] }, { signal: abortController.signal });
+
+        const assignments: unknown[] = [];
+        const timeout = setTimeout(() => abortController.abort(), 200);
+        try {
+            for await (const assignment of stream) {
+                assignments.push(assignment);
+                abortController.abort();
+            }
+        } catch {
+            // Expected abort
+        }
+        clearTimeout(timeout);
+
+        expect(assignments).toHaveLength(0);
+    });
+
+    it('sends all jobs when capabilities is empty (backward compatible)', async () => {
+        const agent = await agentService.createAgent('any-agent', [{ type: 'noop', params: {} }], 3);
+        await agentService.invokeAgent(agent.id, null);
+
+        const abortController = new AbortController();
+        const stream = client.subscribeToJobs({ workerId: 'w1', capabilities: [] }, { signal: abortController.signal });
+
+        const assignments: unknown[] = [];
+        try {
+            for await (const assignment of stream) {
+                assignments.push(assignment);
+                abortController.abort();
+            }
+        } catch {
+            // Expected abort
+        }
+
+        expect(assignments).toHaveLength(1);
+    });
+
     it('processes a multi-step flow', async () => {
         const activities = [
             { id: 'fetch', type: 'noop', params: {} },

@@ -33,14 +33,26 @@ export function createWorkerServiceImpl(
 ): WorkerServiceImplementation {
     return {
         async *subscribeToJobs(
-            _request: SubscribeRequest,
+            request: SubscribeRequest,
             context: CallContext,
         ): AsyncGenerator<DeepPartial<JobAssignment>> {
+            const capabilities = new Set(request.capabilities);
+
             while (!context.signal.aborted) {
                 const agents = await agentService.listAgents();
                 const activeAgents = agents.filter((a: AgentRow) => a.status === 'active');
 
                 for (const agent of activeAgents) {
+                    // Skip agents whose first activity type is not in the worker's capabilities
+                    if (capabilities.size > 0) {
+                        const agentActivities = Array.isArray(agent.activities)
+                            ? (agent.activities as Array<{ type?: string }>)
+                            : [];
+                        const firstStep = agentActivities[0];
+                        if (firstStep && !capabilities.has(firstStep.type ?? '')) {
+                            continue;
+                        }
+                    }
                     const job = await jobService.claimNextJob(agent.id);
                     if (job) {
                         const activities = Array.isArray(agent.activities)

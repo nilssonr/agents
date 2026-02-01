@@ -2,13 +2,14 @@ import type { FastifyInstance } from 'fastify';
 
 import type { AgentService } from '../../features/agents/agent-service.js';
 import type { JobService } from '../../features/jobs/job-service.js';
+import { createAgentSchema, invokeAgentSchema, jobsQuerySchema, validateBody } from './schemas.js';
 
 /**
  * Registers the `/agents` REST routes for CRUD, invocation, restart, and job listing.
  */
 export function registerAgentRoutes(app: FastifyInstance, deps: { agentService: AgentService; jobService: JobService }): void {
     app.post('/agents', async (request, reply) => {
-        const body = request.body as { name: string; activities?: unknown; failure_threshold?: number };
+        const body = validateBody(createAgentSchema, request.body);
         const agent = await deps.agentService.createAgent(body.name, body.activities ?? [], body.failure_threshold ?? 3);
         return reply.status(201).send(agent);
     });
@@ -34,7 +35,8 @@ export function registerAgentRoutes(app: FastifyInstance, deps: { agentService: 
 
     app.post('/agents/:id/invoke', async (request, reply) => {
         const { id } = request.params as { id: string };
-        const payload = request.body ?? null;
+        const parsed = validateBody(invokeAgentSchema, request.body ?? {});
+        const payload = parsed.payload ?? null;
         try {
             const job = await deps.agentService.invokeAgent(id, payload);
             return reply.status(202).send(job);
@@ -64,7 +66,7 @@ export function registerAgentRoutes(app: FastifyInstance, deps: { agentService: 
 
     app.get('/agents/:id/jobs', async (request) => {
         const { id } = request.params as { id: string };
-        const { status } = request.query as { status?: string };
-        return deps.jobService.getJobsForAgent(id, status);
+        const query = validateBody(jobsQuerySchema, request.query);
+        return deps.jobService.getJobsForAgent(id, query.status);
     });
 }

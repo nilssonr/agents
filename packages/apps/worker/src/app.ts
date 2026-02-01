@@ -27,6 +27,7 @@ export function createApp(): App {
         activityTimeoutMs: { env: 'ACTIVITY_TIMEOUT_MS', default: '60000' },
         shutdownGraceMs: { env: 'SHUTDOWN_GRACE_MS', default: '10000' },
         metricsPort: { env: 'METRICS_PORT', default: '9090' },
+        concurrency: { env: 'WORKER_CONCURRENCY', default: '1' },
     });
 
     const channel = createChannel(config.grpcAddress);
@@ -48,6 +49,7 @@ export function createApp(): App {
                     client,
                     registry: activityRegistry,
                     activityTimeoutMs: Number(config.activityTimeoutMs),
+                    concurrency: Number(config.concurrency),
                     metrics,
                 },
                 abortController.signal,
