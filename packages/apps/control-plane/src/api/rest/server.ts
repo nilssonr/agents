@@ -8,6 +8,7 @@ import type { AgentService } from '../../features/agents/agent-service.js';
 import type { JobService } from '../../features/jobs/job-service.js';
 import type { LogService } from '../../features/logs/log-service.js';
 
+import { registerActivityRoutes } from './activities.js';
 import { registerAgentRoutes } from './agents.js';
 import { registerHealthRoutes } from './health.js';
 import { registerJobRoutes } from './jobs.js';
@@ -45,6 +46,7 @@ export async function buildRestServer(deps: RestServerDeps): Promise<FastifyInst
                 { name: 'Agents', description: 'Agent CRUD and lifecycle' },
                 { name: 'Jobs', description: 'Job logs and data' },
                 { name: 'Webhooks', description: 'External trigger endpoints' },
+                { name: 'Activities', description: 'Available activity types' },
                 { name: 'Health', description: 'Liveness and readiness probes' },
             ],
         },
@@ -70,6 +72,7 @@ export async function buildRestServer(deps: RestServerDeps): Promise<FastifyInst
     });
 
     registerAgentRoutes(app, deps);
+    registerActivityRoutes(app);
     registerJobRoutes(app, deps);
     registerWebhookRoutes(app, deps);
 
