@@ -3,6 +3,7 @@ import { createLogger } from '@agents/logger';
 
 import { createActivityLogger } from '../../features/activities/activity-logger.js';
 import type { ActivityRegistry } from '../../features/activities/activity-registry.js';
+import type { WorkerMetrics } from '../../features/metrics/worker-metrics.js';
 
 const logger = createLogger('worker-client');
 
@@ -13,6 +14,8 @@ export interface WorkerClientOptions {
     registry: ActivityRegistry;
     /** Maximum time in milliseconds for a single activity execution. Defaults to 60 000. */
     activityTimeoutMs?: number;
+    /** Optional worker metrics for activity instrumentation. */
+    metrics?: WorkerMetrics;
 }
 
 const BASE_RETRY_MS = 1000;
@@ -28,7 +31,7 @@ const MAX_RETRY_MS = 30000;
 const DEFAULT_ACTIVITY_TIMEOUT_MS = 60_000;
 
 export async function runWorker(options: WorkerClientOptions, signal: AbortSignal): Promise<void> {
-    const { workerId, client, registry, activityTimeoutMs = DEFAULT_ACTIVITY_TIMEOUT_MS } = options;
+    const { workerId, client, registry, activityTimeoutMs = DEFAULT_ACTIVITY_TIMEOUT_MS, metrics } = options;
     let retryMs = BASE_RETRY_MS;
     let connected = false;
 
@@ -38,20 +41,27 @@ export async function runWorker(options: WorkerClientOptions, signal: AbortSigna
             const stream = client.subscribeToJobs({ workerId, capabilities: [] }, { signal });
 
             for await (const assignment of stream) {
-                connected = true;
+                if (!connected) {
+                    connected = true;
+                    metrics?.connected.set(1);
+                }
                 retryMs = BASE_RETRY_MS;
-                await processAssignment(assignment, client, registry, activityTimeoutMs);
+                await processAssignment(assignment, client, registry, activityTimeoutMs, metrics);
             }
         } catch (err: unknown) {
             if (signal.aborted) {
                 logger.info('worker shutting down');
+                metrics?.connected.set(0);
                 return;
             }
             if (connected) {
                 logger.warn({ err, retryMs }, 'connection lost, reconnecting');
+                connected = false;
+                metrics?.connected.set(0);
             } else {
                 logger.info({ retryMs }, 'control-plane not ready, retrying');
             }
+            metrics?.reconnectsTotal.inc();
             await sleep(retryMs, signal);
             retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
         }
@@ -71,11 +81,22 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
     });
 }
 
+/** Timeout error message prefix used to distinguish timeouts from other failures. */
+const TIMEOUT_PREFIX = 'Activity \'';
+const TIMEOUT_SUFFIX = '\' timed out after ';
+
+/** Returns true if the error was caused by an activity timeout. */
+function isTimeoutError(err: unknown): boolean {
+    if (!(err instanceof Error)) return false;
+    return err.message.startsWith(TIMEOUT_PREFIX) && err.message.includes(TIMEOUT_SUFFIX);
+}
+
 async function processAssignment(
     assignment: JobAssignment,
     client: WorkerServiceClient,
     registry: ActivityRegistry,
     activityTimeoutMs: number,
+    metrics?: WorkerMetrics,
 ): Promise<void> {
     logger.info({ jobId: assignment.jobId, activityType: assignment.activityType }, 'processing job');
 
@@ -94,7 +115,9 @@ async function processAssignment(
     }
 
     const activityLogger = createActivityLogger();
+    const jobStartTime = Date.now();
 
+    const startTime = Date.now();
     try {
         const params = assignment.paramsJson ? JSON.parse(assignment.paramsJson) as unknown : {};
         const payload = assignment.payloadJson ? JSON.parse(assignment.payloadJson) as unknown : null;
@@ -103,6 +126,9 @@ async function processAssignment(
             activity(params, payload, context, activityLogger),
             rejectAfterTimeout(activityTimeoutMs, `Activity '${assignment.activityType}' timed out after ${String(activityTimeoutMs)}ms`),
         ]);
+        const durationSec = (Date.now() - startTime) / 1000;
+        metrics?.activityDuration.observe({ type: assignment.activityType }, durationSec);
+        metrics?.activitiesTotal.inc({ type: assignment.activityType, status: 'success' });
         await client.reportJobResult({
             jobId: assignment.jobId,
             agentId: assignment.agentId,
@@ -112,7 +138,14 @@ async function processAssignment(
             stepId: assignment.stepId ?? '',
             logsJson: JSON.stringify(activityLogger.entries()),
         });
+        const jobDurationSec = (Date.now() - jobStartTime) / 1000;
+        metrics?.jobDuration.observe({ agent_id: assignment.agentId }, jobDurationSec);
+        metrics?.jobsTotal.inc({ agent_id: assignment.agentId, status: 'success' });
     } catch (err: unknown) {
+        const durationSec = (Date.now() - startTime) / 1000;
+        metrics?.activityDuration.observe({ type: assignment.activityType }, durationSec);
+        const status = isTimeoutError(err) ? 'timeout' : 'failure';
+        metrics?.activitiesTotal.inc({ type: assignment.activityType, status });
         const errorMessage = err instanceof Error ? err.message : String(err);
         await client.reportJobResult({
             jobId: assignment.jobId,
@@ -123,5 +156,8 @@ async function processAssignment(
             stepId: assignment.stepId ?? '',
             logsJson: JSON.stringify(activityLogger.entries()),
         });
+        const jobDurationSec = (Date.now() - jobStartTime) / 1000;
+        metrics?.jobDuration.observe({ agent_id: assignment.agentId }, jobDurationSec);
+        metrics?.jobsTotal.inc({ agent_id: assignment.agentId, status: 'failure' });
     }
 }

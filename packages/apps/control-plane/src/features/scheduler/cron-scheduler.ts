@@ -24,11 +24,13 @@ export function createCronScheduler(
     triggerRepo: TriggerRepository,
     agentService: AgentService,
     intervalMs: number,
+    metrics?: { schedulerTicks: { inc(): void } },
 ): CronScheduler {
     let timer: ReturnType<typeof setInterval> | null = null;
 
     async function tick(): Promise<void> {
         try {
+            metrics?.schedulerTicks.inc();
             const triggers = await triggerRepo.getCronTriggers();
             const now = Date.now();
 

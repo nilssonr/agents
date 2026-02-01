@@ -92,6 +92,7 @@ packages/
     config/              # Env-based config loader
     contracts/           # Protobuf definitions + generated gRPC types
     logger/              # Structured logger (pino)
+    metrics/             # Shared Prometheus metrics server
     migrations/          # SQL migration runner
 ```
 
@@ -177,6 +178,17 @@ Migrations run automatically on control-plane startup.
 | ------ | ----------------- | ------------------------ |
 | GET    | `/jobs/:id/logs`  | Get logs for a job       |
 
+### Health
+
+| Method | Path       | Description                                  |
+| ------ | ---------- | -------------------------------------------- |
+| GET    | `/health`  | Liveness probe (always 200)                  |
+| GET    | `/ready`   | Readiness probe (DB ping, 200 or 503)        |
+
+### Metrics
+
+Both control-plane and worker serve Prometheus metrics on a dedicated `METRICS_PORT` (default 9090) via the `@agents/metrics` shared library, separate from REST/gRPC ports. Histograms use explicit buckets tuned for p95/p99 percentile resolution.
+
 ### Webhooks
 
 | Method | Path                    | Description                        |
@@ -240,6 +252,9 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 - **Graceful shutdown** — Workers drain in-flight activities before exiting, with a configurable grace period
 - **Persistent scheduler state** — Cron trigger `last_fired_at` is persisted to the database, surviving control-plane restarts
 - **Transaction boundaries** — `withTransaction` helper ensures atomic multi-statement database operations
+- **Health checks** — `GET /health` (liveness) and `GET /ready` (readiness with DB ping) for container orchestrators
+- **Prometheus metrics** — Job counters, duration histograms (p95/p99 buckets), active gauge, scheduler ticks, gRPC assignments (control-plane); activity totals/duration, job totals/duration, reconnect counter, connected gauge (worker)
+- **Configurable DB pool** — Pool sizing and timeout parameters for production tuning
 
 ## Configuration
 
@@ -248,12 +263,17 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | Variable             | Required | Default | Description                     |
 | -------------------- | -------- | ------- | ------------------------------- |
 | `DATABASE_URL`       | Yes      | —       | PostgreSQL connection string    |
+| `DB_POOL_MIN`        | No       | 2       | Minimum pool connections        |
+| `DB_POOL_MAX`        | No       | 10      | Maximum pool connections        |
+| `DB_CONNECTION_TIMEOUT_MS` | No | 5000    | Connection acquire timeout (ms) |
+| `DB_IDLE_TIMEOUT_MS` | No       | 30000   | Idle connection timeout (ms)    |
 | `HTTP_PORT`          | No       | —       | REST server port                |
 | `GRPC_PORT`          | No       | —       | gRPC server port                |
 | `CRON_INTERVAL_MS`   | No       | 60000   | Scheduler tick interval (ms)    |
 | `JOB_REAPER_TTL_MS`  | No       | 300000  | Time before a running job is considered stuck (ms) |
 | `JOB_REAPER_INTERVAL_MS` | No  | 60000   | Job reaper tick interval (ms)   |
 | `GRPC_POLL_INTERVAL_MS` | No   | 1000    | Job polling interval (ms)       |
+| `METRICS_PORT`       | No       | 9090    | Prometheus metrics HTTP server port |
 
 ### Worker
 
@@ -263,6 +283,7 @@ Agents can define multi-step activity flows. Each step specifies an activity typ
 | `WORKER_ID`     | No       | `worker-{timestamp}` | Unique worker identifier         |
 | `ACTIVITY_TIMEOUT_MS` | No | 60000              | Max time for a single activity execution (ms) |
 | `SHUTDOWN_GRACE_MS` | No   | 10000              | Grace period for in-flight work on shutdown (ms) |
+| `METRICS_PORT`  | No       | 9090               | Worker metrics HTTP server port  |
 
 ## Development
 
