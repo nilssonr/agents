@@ -1,13 +1,10 @@
 import { createRoute, useParams } from '@tanstack/react-router';
-import { useState } from 'react';
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
-import { useAgent, useInvokeAgent, useRestartAgent } from '@/hooks/use-agents';
+import { useAgent, useRestartAgent } from '@/hooks/use-agents';
 import { useAgentJobs } from '@/hooks/use-jobs';
 import { rootRoute } from '../__root';
 
@@ -21,9 +18,7 @@ function AgentDetailPage() {
     const { agentId } = useParams({ from: '/agents/$agentId' });
     const { data: agent, isLoading } = useAgent(agentId);
     const { data: jobs, isLoading: jobsLoading } = useAgentJobs(agentId);
-    const invokeAgent = useInvokeAgent();
     const restartAgent = useRestartAgent();
-    const [payload, setPayload] = useState('{}');
 
     if (isLoading) {
         return <Skeleton className="h-64 w-full" />;
@@ -31,15 +26,6 @@ function AgentDetailPage() {
 
     if (!agent) {
         return <p>Agent not found</p>;
-    }
-
-    function handleInvoke() {
-        try {
-            const parsed = JSON.parse(payload);
-            invokeAgent.mutate({ agentId, payload: parsed });
-        } catch {
-            // invalid JSON — ignore
-        }
     }
 
     return (
@@ -54,6 +40,11 @@ function AgentDetailPage() {
                     </Badge>
                 </div>
                 <div className="flex gap-2">
+                    <a href={`/agents/${agentId}/editor`}>
+                        <Button variant="outline" data-testid="edit-workflow-btn">
+                            Edit Workflow
+                        </Button>
+                    </a>
                     <Button
                         variant="outline"
                         onClick={() => restartAgent.mutate(agentId)}
@@ -64,23 +55,6 @@ function AgentDetailPage() {
                     </Button>
                 </div>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-sm font-medium">Invoke</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                    <Textarea
-                        value={payload}
-                        onChange={(e) => setPayload(e.target.value)}
-                        placeholder="JSON payload"
-                        data-testid="invoke-payload"
-                    />
-                    <Button onClick={handleInvoke} disabled={invokeAgent.isPending} data-testid="invoke-btn">
-                        Invoke
-                    </Button>
-                </CardContent>
-            </Card>
 
             <Card>
                 <CardHeader>
@@ -95,6 +69,7 @@ function AgentDetailPage() {
                                 <TableRow>
                                     <TableHead>ID</TableHead>
                                     <TableHead>Status</TableHead>
+                                    <TableHead>Error</TableHead>
                                     <TableHead>Created</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -119,12 +94,22 @@ function AgentDetailPage() {
                                                 {job.status}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell>
+                                            {job.error && (
+                                                <span
+                                                    className="line-clamp-1 max-w-xs text-xs text-red-600"
+                                                    title={job.error}
+                                                >
+                                                    {job.error}
+                                                </span>
+                                            )}
+                                        </TableCell>
                                         <TableCell>{new Date(job.created_at).toLocaleString()}</TableCell>
                                     </TableRow>
                                 ))}
                                 {jobs?.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                        <TableCell colSpan={4} className="text-center text-muted-foreground">
                                             No jobs yet
                                         </TableCell>
                                     </TableRow>
