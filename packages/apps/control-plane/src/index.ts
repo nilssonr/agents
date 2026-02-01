@@ -3,7 +3,7 @@ import { createLogger } from '@agents/logger';
 import { createApp } from './app.js';
 
 const logger = createLogger('control-plane');
-const app = createApp();
+const app = await createApp();
 
 app.start()
     .then((address) => {

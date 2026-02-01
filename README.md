@@ -185,6 +185,15 @@ Migrations run automatically on control-plane startup.
 | GET    | `/health`  | Liveness probe (always 200)                  |
 | GET    | `/ready`   | Readiness probe (DB ping, 200 or 503)        |
 
+### OpenAPI / Swagger UI
+
+| Method | Path          | Description                        |
+| ------ | ------------- | ---------------------------------- |
+| GET    | `/docs`       | Swagger UI interactive docs        |
+| GET    | `/docs/json`  | OpenAPI 3.1 JSON specification     |
+
+All REST routes include JSON Schema definitions for request and response bodies. Error responses use [RFC 7807 Problem Details](https://www.rfc-editor.org/rfc/rfc7807) (`application/problem+json`).
+
 ### Metrics
 
 Both control-plane and worker serve Prometheus metrics on a dedicated `METRICS_PORT` (default 9090) via the `@agents/metrics` shared library, separate from REST/gRPC ports. Histograms use explicit buckets tuned for p95/p99 percentile resolution.

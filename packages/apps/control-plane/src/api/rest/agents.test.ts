@@ -17,13 +17,13 @@ describe('Agent routes', () => {
     let agentService: AgentService;
     let jobService: JobService;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         const agentRepo = createFakeAgentRepository();
         const jobRepo = createFakeJobRepository();
         agentService = createAgentService(agentRepo, jobRepo);
         jobService = createJobService(jobRepo, agentRepo, agentService.handleJobFailure, createFlowService());
         const logService = createLogService(createFakeLogRepository());
-        app = buildRestServer({ agentService, jobService, logService });
+        app = await buildRestServer({ agentService, jobService, logService });
     });
 
     it('POST /agents creates an agent', async () => {
@@ -106,7 +106,7 @@ describe('Agent routes', () => {
             payload: {},
         });
         expect(res.statusCode).toBe(400);
-        expect(res.json().error).toContain('name');
+        expect(res.json().detail).toContain('name');
     });
 
     it('POST /agents with empty name returns 400', async () => {
@@ -122,6 +122,16 @@ describe('Agent routes', () => {
         const agent = await agentService.createAgent('a', [], 3);
         const res = await app.inject({ method: 'GET', url: `/agents/${agent.id}/jobs?status=invalid` });
         expect(res.statusCode).toBe(400);
+    });
+
+    it('GET /docs/json returns OpenAPI spec', async () => {
+        await app.ready();
+        const res = await app.inject({ method: 'GET', url: '/docs/json' });
+        expect(res.statusCode).toBe(200);
+        const spec = res.json();
+        expect(spec.openapi).toBe('3.1.0');
+        expect(spec.info.title).toBe('Agents Control Plane API');
+        expect(spec.paths).toBeDefined();
     });
 
     it('GET /agents/:id/jobs?status=pending filters', async () => {
